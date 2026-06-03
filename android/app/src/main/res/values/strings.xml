@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Zero Club</string>
+    <string name="title_activity_main">Zero Club</string>
+    <string name="package_name">com.zeroclub.app</string>
+    <string name="custom_url_scheme">com.zeroclub.app</string>
+</resources>
