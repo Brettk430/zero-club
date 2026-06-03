@@ -145,7 +145,7 @@ const Home = () => (
       >
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-blue-200">Community</p>
-          <h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">Join your cohort →</h2>
+          <h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">Find your people →</h2>
           <p className="mt-2 text-sm text-blue-100 sm:text-base">Find people fighting the same fight. Pick your goal year or debt type and get in the room.</p>
         </div>
         <div className="hidden shrink-0 sm:flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
@@ -253,7 +253,7 @@ const Home = () => (
             <p className="mt-2 text-slate-500 dark:text-slate-400">Join a group matched to your goal. People with the same target make better accountability partners.</p>
           </div>
           <Link to="/community" className="shrink-0 rounded-full bg-violet-50 px-5 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 dark:bg-violet-950/50 dark:text-violet-300">
-            Browse all cohorts →
+            Find your people →
           </Link>
         </div>
         <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
