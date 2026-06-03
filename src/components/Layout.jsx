@@ -99,6 +99,25 @@ const BottomNav = () => {
           const isActive = item.path === '/'
             ? location.pathname === '/'
             : location.pathname.startsWith(item.path)
+          const isCommunity = item.path === '/community'
+
+          if (isCommunity) {
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 transition-colors"
+              >
+                <span className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md transition-all ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white dark:bg-blue-600'}`}>
+                  {item.icon}
+                </span>
+                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {item.name}
+                </span>
+              </NavLink>
+            )
+          }
+
           return (
             <NavLink
               key={item.path}

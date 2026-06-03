@@ -1,5 +1,20 @@
 import { Link } from 'react-router-dom'
 
+const leaderboard = [
+  { name: 'SteadyFalcon22', cohort: 'Debt-Free by 2027', pct: 78, paid: 31200, color: 'bg-blue-500',    status: 'Final Stretch' },
+  { name: 'BoldOtter44',    cohort: 'Student Loan Crushers', pct: 61, paid: 18300, color: 'bg-violet-500', status: 'Halfway There' },
+  { name: 'CalmHawk07',     cohort: 'Debt-Free by 2026', pct: 91, paid: 54600, color: 'bg-emerald-500', status: 'Almost Zero' },
+  { name: 'FocusedWolf31',  cohort: 'Under 30 Debt-Free', pct: 34, paid: 8500,  color: 'bg-amber-500',  status: 'Building Momentum' },
+  { name: 'QuietEagle88',   cohort: 'Credit Card Elimination', pct: 55, paid: 11000, color: 'bg-rose-500', status: 'Halfway There' },
+]
+
+const memberStatuses = [
+  { label: 'Road to Zero',    range: '0–25% paid off',   color: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
+  { label: 'In Progress',     range: '25–50% paid off',  color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' },
+  { label: 'Final Stretch',   range: '50–90% paid off',  color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300' },
+  { label: 'Zero Club Member',range: '100% paid off',    color: 'bg-yellow-200 text-yellow-800 dark:bg-yellow-800/40 dark:text-yellow-300' },
+]
+
 const cohorts = [
   { id: 'dff-2026', label: 'Debt-Free by 2026', description: 'Final sprint to zero', color: 'bg-blue-500' },
   { id: 'dff-2027', label: 'Debt-Free by 2027', description: 'Three-year mission',   color: 'bg-violet-500' },
@@ -118,6 +133,93 @@ const Home = () => (
             <p className="mt-4 font-semibold text-slate-900 dark:text-slate-100">Accountability over content</p>
             <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate.400">Most people know what to do. Staying consistent for 3–10 years is the hard part. That's what we're built for.</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    {/* Big community CTA */}
+    <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 sm:pb-16">
+      <Link
+        to="/community"
+        className="flex items-center justify-between gap-6 rounded-3xl bg-gradient-to-r from-blue-600 to-violet-600 p-6 shadow-lg transition hover:opacity-95 sm:p-10"
+      >
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-blue-200">Community</p>
+          <h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">Join your cohort →</h2>
+          <p className="mt-2 text-sm text-blue-100 sm:text-base">Find people fighting the same fight. Pick your goal year or debt type and get in the room.</p>
+        </div>
+        <div className="hidden shrink-0 sm:flex h-16 w-16 items-center justify-center rounded-2xl bg-white/20">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-8 w-8 text-white">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+          </svg>
+        </div>
+      </Link>
+    </section>
+
+    {/* Member leaderboard */}
+    <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 sm:pb-16">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 dark:border-slate-700 dark:bg-slate-900">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Live rankings</p>
+            <h2 className="mt-3 text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">Members making moves</h2>
+          </div>
+          <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Live
+          </span>
+        </div>
+        <div className="mt-6 space-y-3">
+          {leaderboard.map((member, i) => (
+            <div key={member.name} className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3.5 dark:border-slate-800 dark:bg-slate-800/50">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                {i + 1}
+              </span>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-300 text-xs font-bold text-white dark:bg-slate-600" style={{ background: member.color.replace('bg-', '') }}>
+                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${member.color}`}>
+                  {member.name[0]}
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">{member.name}</p>
+                  <span className="shrink-0 text-sm font-bold text-slate-900 dark:text-slate-100">{member.pct}%</span>
+                </div>
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div className={`h-full rounded-full ${member.color} transition-all`} style={{ width: `${member.pct}%` }} />
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{member.cohort}</span>
+                  <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">${member.paid.toLocaleString()} paid off</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    {/* Member status */}
+    <section className="mx-auto max-w-6xl px-4 pb-8 sm:px-6 sm:pb-16">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10 dark:border-slate-700 dark:bg-slate-900">
+        <p className="text-xs font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">Member status</p>
+        <h2 className="mt-3 text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">Your rank on the road to zero</h2>
+        <p className="mt-2 text-slate-500 dark:text-slate-400">Every member has a status based on how far they've come. The goal is simple — reach Zero Club Member.</p>
+        <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {memberStatuses.map((s, i) => (
+            <div key={s.label} className={`relative rounded-2xl border p-5 ${i === memberStatuses.length - 1 ? 'border-yellow-300 bg-yellow-50 dark:border-yellow-700/60 dark:bg-yellow-950/20' : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-800/40'}`}>
+              {i === memberStatuses.length - 1 && (
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-yellow-400 px-3 py-0.5 text-xs font-bold text-slate-900">Goal</span>
+              )}
+              <div className="flex items-center gap-2">
+                {[...Array(4)].map((_, dot) => (
+                  <span key={dot} className={`h-2 w-2 rounded-full ${dot <= i ? (i === 3 ? 'bg-yellow-400' : 'bg-blue-500') : 'bg-slate-200 dark:bg-slate-700'}`} />
+                ))}
+              </div>
+              <p className={`mt-3 text-sm font-bold ${i === memberStatuses.length - 1 ? 'text-yellow-700 dark:text-yellow-400' : 'text-slate-800 dark:text-slate-200'}`}>{s.label}</p>
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{s.range}</p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
