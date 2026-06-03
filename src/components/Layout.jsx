@@ -165,20 +165,38 @@ const Layout = () => {
             {/* Desktop nav — hidden on mobile */}
             <nav className="hidden gap-1 md:flex">
               {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  end={item.path === '/'}
-                  className={({ isActive }) =>
-                    `rounded-full px-4 py-2 text-sm font-medium transition ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
-                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
-                    }`
-                  }
-                >
-                  {item.name}
-                </NavLink>
+                item.path === '/community'
+                  ? (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `rounded-full px-4 py-2 text-sm font-bold transition ${
+                          isActive
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'bg-slate-900 text-white hover:bg-slate-700 dark:bg-blue-600 dark:hover:bg-blue-500'
+                        }`
+                      }
+                    >
+                      {item.name}
+                    </NavLink>
+                  )
+                  : (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      end={item.path === '/'}
+                      className={({ isActive }) =>
+                        `rounded-full px-4 py-2 text-sm font-medium transition ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
+                            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                        }`
+                      }
+                    >
+                      {item.name}
+                    </NavLink>
+                  )
               ))}
             </nav>
 

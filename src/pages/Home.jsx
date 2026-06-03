@@ -86,19 +86,11 @@ const Home = () => (
               to="/community"
               className="rounded-full border border-slate-200 bg-white px-7 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
-              Join a cohort
+              Find your people
             </Link>
           </div>
         </div>
 
-        {/* Identity strip */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4 border-t border-slate-100 pt-8 dark:border-slate-800">
-          {['Journey to Zero', 'Zero Day', 'Final Payment', 'Zero Club Member', 'Road to Zero'].map((label) => (
-            <span key={label} className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              {label}
-            </span>
-          ))}
-        </div>
       </div>
     </section>
 
