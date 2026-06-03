@@ -47,7 +47,15 @@ export const DebtProvider = ({ children }) => {
   }
 
   const updateDebt = (id, updates) => {
-    setDebts((prev) => prev.map((debt) => (debt.id === id ? { ...debt, ...updates } : debt)))
+    setDebts((prev) => prev.map((debt) => {
+      if (debt.id !== id) return debt
+      const updated = { ...debt, ...updates }
+      // Lock in startingBalance the first time a real balance is entered
+      if (!updated.startingBalance && updated.balance > 0) {
+        updated.startingBalance = updated.balance
+      }
+      return updated
+    }))
   }
 
   const removeDebt = (id) => {
