@@ -165,9 +165,7 @@ const CommunityChat = () => {
 
 const Community = () => (
   <section className="mx-auto max-w-6xl px-4 py-6 text-slate-900 sm:px-6 sm:py-16 dark:text-slate-100">
-    <ProGate feature="the Cohort Community">
       <CommunityChat />
-    </ProGate>
   </section>
 )
 

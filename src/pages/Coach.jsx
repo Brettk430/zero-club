@@ -117,7 +117,7 @@ const Coach = () => {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-6 text-slate-900 sm:px-6 sm:py-16 dark:text-slate-100">
-      <ProGate feature="Miles, Your AI Coach">
+      <>
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-10 dark:border-slate-700 dark:bg-slate-900">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -177,7 +177,7 @@ const Coach = () => {
             </button>
           </form>
         </div>
-      </ProGate>
+      </>
     </section>
   )
 }
