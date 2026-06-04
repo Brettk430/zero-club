@@ -28,12 +28,11 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.create({
       ui_mode: 'embedded',
       mode: 'subscription',
-      payment_method_types: ['card'],
       customer_email: userEmail || undefined,
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       discounts: [{ coupon: 'FOUNDER' }],
       metadata: { supabase_user_id: userId },
-      return_url: `${appUrl}/coach?upgraded=true`,
+      return_url: `${appUrl}/coach?upgraded=true&session_id={CHECKOUT_SESSION_ID}`,
     })
 
     res.json({ clientSecret: session.client_secret })
