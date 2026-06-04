@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Logo from './Logo.jsx'
 import AuthModal from './AuthModal.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -47,6 +47,7 @@ const MoonIcon = () => (
 
 const UserMenu = () => {
   const { user, isPro, signOut } = useAuth()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const initials = user.email?.[0]?.toUpperCase() ?? '?'
 
@@ -56,7 +57,7 @@ const UserMenu = () => {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full border border-slate-200 bg-white pl-2 pr-3 py-1.5 text-sm shadow-sm transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
           {initials}
         </span>
         <span className="hidden max-w-[120px] truncate text-slate-700 sm:inline dark:text-slate-200">{user.email}</span>
@@ -69,7 +70,17 @@ const UserMenu = () => {
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-40 mt-2 w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+          <div className="absolute right-0 top-full z-40 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+            <button
+              onClick={() => { navigate('/profile'); setOpen(false) }}
+              className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4 text-slate-400">
+                <path d="M8 8a3 3 0 100-6 3 3 0 000 6zM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 00-11.215 0c-.22.578.255 1.139.872 1.139h9.47z" />
+              </svg>
+              My Profile
+            </button>
+            <div className="border-t border-slate-100 dark:border-slate-700" />
             <button
               onClick={() => { signOut(); setOpen(false) }}
               className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
