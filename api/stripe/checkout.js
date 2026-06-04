@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     const appUrl = origin || process.env.APP_URL || 'http://localhost:5173'
 
     const session = await stripe.checkout.sessions.create({
+      ui_mode: 'embedded',
       mode: 'subscription',
       payment_method_types: ['card'],
       customer_email: userEmail || undefined,
@@ -33,11 +34,10 @@ export default async function handler(req, res) {
       discounts: [{ coupon: 'FOUNDER' }],
       subscription_data: { trial_period_days: 10 },
       metadata: { supabase_user_id: userId },
-      success_url: `${appUrl}/coach?upgraded=true`,
-      cancel_url: `${appUrl}/coach`,
+      return_url: `${appUrl}/coach?upgraded=true`,
     })
 
-    res.json({ url: session.url })
+    res.json({ clientSecret: session.client_secret })
   } catch (err) {
     console.error('Stripe checkout error:', err)
     res.status(500).json({ error: err.message })
