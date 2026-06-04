@@ -32,6 +32,7 @@ const CommunityChat = () => {
   const [draft, setDraft] = useState('')
   const [connected, setConnected] = useState(false)
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -88,14 +89,18 @@ const CommunityChat = () => {
 
   const handleSend = async (e) => {
     e.preventDefault()
-    if (!draft.trim() || !user || sending) return
+    if (!draft.trim() || sending) return
+    if (!user) { setSendError('Sign in to send messages'); return }
+    if (!supabaseReady) { setSendError('Database not connected'); return }
     const text = draft.trim()
     setDraft('')
+    setSendError('')
     setSending(true)
     inputRef.current?.focus()
-    await supabase.from('community_messages').insert([{
+    const { error } = await supabase.from('community_messages').insert([{
       user_id: user.id, username, message: text, room: roomLabel,
     }])
+    if (error) setSendError(error.message)
     setSending(false)
   }
 
@@ -173,6 +178,7 @@ const CommunityChat = () => {
 
       {/* Input */}
       <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800">
+        {sendError && <p className="mb-2 text-xs text-red-500">{sendError}</p>}
         {user ? (
           <form className="flex gap-2" onSubmit={handleSend}>
             <input
