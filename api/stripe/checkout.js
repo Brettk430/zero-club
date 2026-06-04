@@ -30,6 +30,7 @@ export default async function handler(req, res) {
       payment_method_types: ['card'],
       customer_email: userEmail || undefined,
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      discounts: [{ coupon: 'FOUNDER' }],
       subscription_data: { trial_period_days: 10 },
       metadata: { supabase_user_id: userId },
       success_url: `${appUrl}/coach?upgraded=true`,
