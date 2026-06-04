@@ -213,6 +213,7 @@ const Layout = () => {
                 ? <UserMenu />
                 : (
                   <button
+                    data-auth-trigger
                     onClick={() => setShowAuth(true)}
                     className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                   >
