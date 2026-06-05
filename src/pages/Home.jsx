@@ -2,6 +2,12 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
 
+const demoMembers = [
+  { name: 'SteadyFalcon22', paid: 31200, pct: 78, months: 14, color: 'bg-blue-500' },
+  { name: 'CalmHawk07',     paid: 54600, pct: 91, months: 22, color: 'bg-emerald-500' },
+  { name: 'BoldOtter44',    paid: 18300, pct: 61, months: 9,  color: 'bg-violet-500' },
+]
+
 const steps = [
   {
     n: '1',
@@ -57,7 +63,7 @@ const features = [
 ]
 
 const Home = () => {
-  const { debts } = useDebt()
+  const { debts, plan } = useDebt()
 
   const totalPaidOff = useMemo(() =>
     debts.reduce((sum, d) => {
@@ -95,20 +101,61 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Dollars eliminated */}
-          {totalPaidOff > 0 && (
-            <div className="mx-auto mt-10 max-w-sm rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5 text-center dark:border-emerald-800 dark:bg-emerald-950/30">
-              <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">You've eliminated</p>
-              <p className="mt-1 text-4xl font-bold text-emerald-700 dark:text-emerald-400">${totalPaidOff.toLocaleString()}</p>
-              <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-500">in debt. Keep going.</p>
+          {/* Personal dashboard — shown once they have debts */}
+          {totalPaidOff > 0 ? (
+            <div className="mx-auto mt-10 w-full max-w-lg rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5 dark:border-emerald-800 dark:bg-emerald-950/30">
+              <p className="text-center text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Your progress</p>
+              <p className="mt-1 text-center text-4xl font-bold text-emerald-700 dark:text-emerald-400">${totalPaidOff.toLocaleString()} eliminated</p>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-white/70 px-4 py-3 text-center dark:bg-slate-800/50">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Remaining</p>
+                  <p className="mt-0.5 font-bold text-slate-900 dark:text-slate-100">${debts.reduce((s, d) => s + Number(d.balance || 0), 0).toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-white/70 px-4 py-3 text-center dark:bg-slate-800/50">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Debt-free by</p>
+                  <p className="mt-0.5 font-bold text-slate-900 dark:text-slate-100">{plan.payoffDate || '—'}</p>
+                </div>
+              </div>
+              <Link to="/plan" className="mt-4 flex w-full items-center justify-center rounded-full bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                Go to your Journey →
+              </Link>
             </div>
-          )}
-
-          {totalPaidOff === 0 && (
-            <div className="mx-auto mt-10 max-w-sm rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-5 text-center dark:border-slate-700 dark:bg-slate-800/50">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Your debt eliminated</p>
-              <p className="mt-1 text-4xl font-bold text-slate-300 dark:text-slate-600">$0</p>
-              <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">Start tracking to see this grow.</p>
+          ) : (
+            /* Simulation for new visitors */
+            <div className="mx-auto mt-10 w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50">
+              <div className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Zero members this month</p>
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live
+                  </span>
+                </div>
+              </div>
+              <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                {demoMembers.map((m) => (
+                  <div key={m.name} className="flex items-center gap-3 px-5 py-3">
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${m.color}`}>
+                      {m.name[0]}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{m.name}</p>
+                        <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">+${m.paid.toLocaleString()}</p>
+                      </div>
+                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                        <div className={`h-full rounded-full ${m.color}`} style={{ width: `${m.pct}%` }} />
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500">{m.months}mo</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-slate-100 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-900">
+                <p className="text-center text-xs text-slate-400 dark:text-slate-500">
+                  Your progress will appear here once you start tracking.
+                </p>
+              </div>
             </div>
           )}
         </div>
