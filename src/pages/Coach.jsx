@@ -123,7 +123,7 @@ const Coach = () => {
             <div>
               <h1 className="text-2xl font-bold text-slate-900 sm:text-4xl dark:text-slate-100">Miles</h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-500 sm:mt-3 sm:text-base dark:text-slate-400">
-                Your AI coach. Miles uses your real debt numbers to answer what-if questions and keep your payoff plan on track.
+                Your accountability coach. Miles focuses on behavior — helping you stay consistent, recover from setbacks, and find extra money to throw at debt.
               </p>
             </div>
             <span className={`w-fit rounded-full px-3 py-1.5 text-sm font-semibold sm:px-4 sm:py-2 ${coachReady ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
@@ -157,15 +157,36 @@ const Coach = () => {
             <div ref={bottomRef} />
           </div>
 
-          <form className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-[1fr_auto]" onSubmit={handleSubmit}>
-            <label className="sr-only" htmlFor="coach-question">Ask a debt question</label>
+          {/* Quick prompts */}
+          {coachReady && messages.length <= 1 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {[
+                'Give me one action I can take this week',
+                'I had a tough month — help me get back on track',
+                'Where am I leaking money?',
+                'How close am I to paying off my highest-rate debt?',
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => setQuestion(prompt)}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-blue-700 dark:hover:bg-blue-950/30 dark:hover:text-blue-400"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <form className="mt-4 grid gap-3 sm:mt-4 sm:grid-cols-[1fr_auto]" onSubmit={handleSubmit}>
+            <label className="sr-only" htmlFor="coach-question">Ask Miles</label>
             <input
               id="coach-question"
               type="text"
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               disabled={streaming}
-              placeholder={coachReady ? 'e.g. What if I add $200 to my highest card?' : 'Add debts first in Calculator'}
+              placeholder={coachReady ? 'Ask Miles anything about your debt journey…' : 'Add debts first in Calculator'}
               className="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:opacity-50 placeholder:text-slate-400 sm:px-5 sm:py-4 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
             <button

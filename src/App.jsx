@@ -8,6 +8,7 @@ import Plan from './pages/Plan.jsx'
 import Coach from './pages/Coach.jsx'
 import Community from './pages/Community.jsx'
 import Profile from './pages/Profile.jsx'
+import Commitments from './pages/Commitments.jsx'
 import { DebtProvider } from './context/DebtContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
@@ -44,6 +45,7 @@ function AppContent() {
           <Route path="coach" element={<Coach />} />
           <Route path="community" element={<Community />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="commitments" element={<Commitments />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

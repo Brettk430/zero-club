@@ -239,6 +239,27 @@ const Plan = () => {
 
   const achievements = useMemo(() => computeAchievements(debts), [debts])
 
+  const streak = useMemo(() => {
+    try {
+      const commitments = JSON.parse(localStorage.getItem('zc_commitments') || '[]')
+      if (!commitments.length) return 0
+      const allCheckIns = commitments.flatMap((c) => c.checkIns || [])
+      if (!allCheckIns.length) return 0
+      const byMonth = {}
+      for (const ci of allCheckIns) {
+        if (!byMonth[ci.month]) byMonth[ci.month] = []
+        byMonth[ci.month].push(ci.kept)
+      }
+      const months = Object.keys(byMonth).sort().reverse()
+      let count = 0
+      for (const m of months) {
+        if (byMonth[m].every(Boolean)) count++
+        else break
+      }
+      return count
+    } catch { return 0 }
+  }, [])
+
   useEffect(() => {
     if (!debts.length) return
     const newOnes = getNewlyUnlocked(debts)
@@ -272,7 +293,15 @@ const Plan = () => {
 
             {/* Progress profile */}
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-10 dark:border-slate-700 dark:bg-slate-900">
-              <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Your Journey</p>
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Your Journey</p>
+                {streak > 0 && (
+                  <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1.5 dark:bg-amber-950/30">
+                    <span className="text-sm font-bold text-amber-600 dark:text-amber-400">{streak}</span>
+                    <span className="text-xs text-amber-600 dark:text-amber-400">month streak</span>
+                  </div>
+                )}
+              </div>
 
               <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-10">
                 <ProgressRing pct={pctPaidOff} />

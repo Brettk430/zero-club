@@ -53,7 +53,7 @@ const Profile = () => {
     { label: 'Create your account',        done: Boolean(user),                    href: null },
     { label: 'Enter your debts',           done: debts.length > 0,                 href: '/calculator', cta: 'Add debts' },
     { label: 'Set your monthly budget',    done: Boolean(monthlyIncome || maxMonthlyPayment), href: '/calculator', cta: 'Set budget' },
-    { label: 'Join a cohort',              done: Boolean(localStorage.getItem('zc_cohort')), href: '/community', cta: 'Join now' },
+    { label: 'Make your first commitment',  done: Boolean(localStorage.getItem('zc_commitments') && JSON.parse(localStorage.getItem('zc_commitments') || '[]').length > 0), href: '/commitments', cta: 'Make one' },
     { label: 'Log your first check-in',    done: hasCheckin,                       href: '/plan', cta: 'Go to Journey' },
     { label: 'Ask Miles a question',       done: Boolean(localStorage.getItem('zc_asked_miles')), href: '/coach', cta: 'Talk to Miles' },
   ]
