@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import ProGate from '../components/ProGate.jsx'
 import { apiBase } from '../lib/apiBase.js'
+import { track } from '../lib/analytics.js'
 
 const Coach = () => {
   const { debts, monthlyIncome } = useDebt()
@@ -42,7 +44,10 @@ const Coach = () => {
 
     const userText = question.trim()
     setQuestion('')
-    setMessages((prev) => [...prev, { role: 'user', text: userText }])
+    setMessages((prev) => {
+      if (prev.length === 1) track('first_miles_message') // only the welcome message exists
+      return [...prev, { role: 'user', text: userText }]
+    })
     setStreaming(true)
     setMessages((prev) => [...prev, { role: 'assistant', text: '' }])
 
@@ -126,9 +131,10 @@ const Coach = () => {
                 Your accountability coach. Miles focuses on behavior — helping you stay consistent, recover from setbacks, and find extra money to throw at debt.
               </p>
             </div>
-            <span className={`w-fit rounded-full px-3 py-1.5 text-sm font-semibold sm:px-4 sm:py-2 ${coachReady ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
-              {coachReady ? 'Personalized' : 'Waiting for debt data'}
-            </span>
+            {coachReady
+              ? <span className="w-fit rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 sm:px-4 sm:py-2">Personalized</span>
+              : <Link to="/calculator" className="w-fit rounded-full bg-yellow-400 px-3 py-1.5 text-sm font-semibold text-slate-900 transition hover:bg-yellow-300 sm:px-4 sm:py-2">Add your debts first →</Link>
+            }
           </div>
 
           <div className="mt-6 max-h-[400px] overflow-y-auto rounded-3xl bg-slate-50 p-4 sm:mt-10 sm:max-h-[480px] sm:p-6 dark:bg-slate-800">

@@ -1,0 +1,20 @@
+{
+  "name": "Zero Club",
+  "short_name": "Zero Club",
+  "description": "Debt payoff accountability platform. Make commitments, check in monthly, reach zero.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "screenshots": []
+}

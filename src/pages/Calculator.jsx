@@ -237,8 +237,33 @@ const Calculator = () => {
         </div>
 
         {debts.length === 0 ? (
-          <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-400 sm:mt-10 sm:p-10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
-            <p>No debts yet — tap <span className="font-semibold text-slate-600 dark:text-slate-300">+ Add debt</span> to get started.</p>
+          <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 sm:mt-10 sm:p-12 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="mx-auto max-w-sm text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7 text-blue-600 dark:text-blue-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </div>
+              <h3 className="mt-4 font-semibold text-slate-900 dark:text-slate-100">Add your first debt</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Enter your balances, interest rates, and minimum payments. We'll rank them and build your payoff plan instantly.
+              </p>
+              <div className="mt-5 space-y-2 text-left rounded-2xl bg-white p-4 dark:bg-slate-900">
+                {['Credit card balance + APR', 'Student loan balance + rate', 'Car loan or personal loan', 'Any other debt you carry'].map((ex) => (
+                  <div key={ex} className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400" />
+                    {ex}
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleAddDebt}
+                className="mt-5 w-full rounded-full bg-yellow-400 py-3 text-sm font-bold text-slate-900 transition hover:bg-yellow-300"
+              >
+                + Add your first debt
+              </button>
+            </div>
           </div>
         ) : (
           <div className="mt-6 space-y-3 sm:mt-10">

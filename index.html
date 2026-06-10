@@ -4,27 +4,99 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Zero Club — Debt Payoff & Community</title>
-    <meta name="description" content="Zero Club turns your debt into a ranked payoff plan using the avalanche method, connects you with anonymous peers, and gives you Miles — an AI coach who knows your exact numbers." />
+    <title>Zero Club — Debt Payoff Accountability Platform</title>
+    <meta name="description" content="Zero Club is the accountability platform for debt payoff. Make monthly commitments, check in consistently, build streaks, and reach zero debt faster with AI coaching and community support." />
+    <link rel="canonical" href="https://zero-club1.vercel.app/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Zero Club — Get to zero. Stay there." />
-    <meta property="og:description" content="Avalanche payoff calculator, AI debt coach, and anonymous peer community. Free to start." />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://zero-club1.vercel.app/" />
+    <meta property="og:title" content="Zero Club — Debt freedom is a habit. We build it with you." />
+    <meta property="og:description" content="The accountability platform for debt payoff. Monthly commitments, AI coaching, and a community of people who get it." />
+    <meta property="og:image" content="https://zero-club1.vercel.app/og-image.png" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Zero Club — Get to zero. Stay there." />
-    <meta name="twitter:description" content="Avalanche payoff calculator, AI debt coach, and anonymous peer community. Free to start." />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:title" content="Zero Club — Debt freedom is a habit." />
+    <meta name="twitter:description" content="The accountability platform for debt payoff. Monthly commitments, AI coaching, streaks." />
+    <meta name="twitter:image" content="https://zero-club1.vercel.app/og-image.png" />
 
-    <!-- Mobile web app -->
+    <!-- Mobile / PWA -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Zero Club" />
     <meta name="theme-color" content="#2563eb" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Structured data — SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Zero Club",
+      "applicationCategory": "FinanceApplication",
+      "description": "Debt payoff accountability platform. Track commitments, check in monthly, build streaks, and reach zero debt faster with AI coaching.",
+      "url": "https://zero-club1.vercel.app",
+      "offers": [
+        {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "name": "Free"
+        },
+        {
+          "@type": "Offer",
+          "price": "9",
+          "priceCurrency": "USD",
+          "name": "Premium",
+          "billingIncrement": "month"
+        }
+      ],
+      "featureList": [
+        "Debt avalanche calculator",
+        "Monthly accountability commitments",
+        "AI behavior coach",
+        "Streak tracking",
+        "Accountability community"
+      ]
+    }
+    </script>
+
+    <!-- FAQ structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is the debt avalanche method?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The debt avalanche method pays off your highest-interest debt first while making minimum payments on all others. When the highest-rate debt is paid off, you roll that payment to the next highest. This minimizes total interest paid."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does Zero Club help with debt payoff?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Zero Club is an accountability platform for debt payoff. You set monthly commitments, check in each month, and build streaks. An AI coach named Miles helps you stay on track, find extra money, and recover from setbacks."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Zero Club free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Zero Club has a free tier that includes the debt calculator, journey scoreboard, monthly commitments, and streak tracking. Premium ($9/month) adds unlimited AI coaching sessions and accountability circles."
+          }
+        }
+      ]
+    }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useDebt } from '../context/DebtContext.jsx'
+import { track } from '../lib/analytics.js'
 
 const STORAGE_KEY = 'zc_commitments'
 
@@ -177,6 +178,7 @@ const Commitments = () => {
   const addCommitment = (e) => {
     e.preventDefault()
     if (!draft.trim()) return
+    if (commitments.length === 0) track('first_commitment_made')
     const updated = [...commitments, { id: crypto.randomUUID(), text: draft.trim(), createdAt: new Date().toISOString(), checkIns: [] }]
     setCommitments(updated)
     saveCommitments(updated)
@@ -307,9 +309,26 @@ const Commitments = () => {
 
         {/* Commitments list */}
         {commitments.length === 0 ? (
-          <div className="mt-4 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-500">
-            <p className="font-medium">No commitments yet.</p>
-            <p className="mt-1 text-sm">Add your first one above — be specific about what you'll do this month.</p>
+          <div className="mt-4 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 dark:border-slate-700 dark:bg-slate-800/50">
+            <div className="mx-auto max-w-sm text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/30">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-7 w-7 text-amber-600 dark:text-amber-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="mt-4 font-semibold text-slate-900 dark:text-slate-100">Make your first commitment</h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                A commitment is a specific promise — not a vague goal. The more specific it is, the easier it is to keep.
+              </p>
+              <div className="mt-4 space-y-2 text-left rounded-2xl bg-white p-4 dark:bg-slate-900">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Examples</p>
+                {['Pay $1,500/month toward my Visa', 'No restaurant spending over $150', 'Make one extra payment this month', 'Cancel two subscriptions this week'].map((ex) => (
+                  <button key={ex} type="button" onClick={() => setDraft(ex)} className="block w-full rounded-xl bg-slate-50 px-3 py-2 text-left text-xs text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-400">
+                    {ex}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="mt-4 space-y-4">

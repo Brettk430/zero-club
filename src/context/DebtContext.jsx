@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { calculateAvalanchePlan, normalizeDebt } from '../lib/debtUtils.js'
+import { track } from '../lib/analytics.js'
 
 const DebtContext = createContext(null)
 
@@ -42,7 +43,10 @@ export const DebtProvider = ({ children }) => {
 
   const addDebt = () => {
     const newDebt = { id: crypto.randomUUID(), name: '', balance: 0, rate: 0, minPayment: 0, type: 'debt', homeValue: 0, pmiRate: 0.85 }
-    setDebts((prev) => [...prev, newDebt])
+    setDebts((prev) => {
+      if (prev.length === 0) track('first_debt_added')
+      return [...prev, newDebt]
+    })
     return newDebt.id
   }
 

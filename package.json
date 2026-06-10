@@ -21,6 +21,7 @@
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^9.7.0",
     "@supabase/supabase-js": "^2.106.1",
+    "posthog-js": "^1.383.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.1",
@@ -38,6 +39,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
     "postcss": "^8.5.15",
+    "react-snap": "^1.23.0",
     "tailwindcss": "^4.3.0",
     "vercel": "^54.3.0",
     "vite": "^8.0.12"
