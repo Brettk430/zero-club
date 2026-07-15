@@ -45,7 +45,6 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
 
   while (planDebts.some((debt) => debt.balance > 0) && month < 360) {
     const active = planDebts.filter((debt) => debt.balance > 0)
-    const totalMinPayment = active.reduce((sum, debt) => sum + Math.min(debt.minPayment, debt.balance), 0)
     const interestThisMonth = active.reduce((sum, debt) => {
       const interest = debt.balance * (debt.rate / 100 / 12)
       debt.balance += interest
@@ -121,9 +120,11 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
   }
 
   const monthsUntilPayoff = planDebts.every((debt) => debt.balance <= 0) ? month : 0
-  const payoffDate = monthsUntilPayoff ? monthsBetween(new Date(), monthsUntilPayoff).toLocaleDateString() : null
+  const payoffDate = monthsUntilPayoff
+    ? monthsBetween(new Date(), monthsUntilPayoff).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : null
 
-  const minOnlyInterest = calculateMinOnlyInterest(activeDebts, monthlyPayment)
+  const minOnlyInterest = calculateMinOnlyInterest(activeDebts)
   const interestSaved = Math.max(0, minOnlyInterest - totalInterest)
 
   // Compute the optimized per-debt payment split for month 1
@@ -163,30 +164,21 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
   }
 }
 
-const calculateMinOnlyInterest = (debts, monthlyPayment) => {
+// Baseline: each debt receives only its own minimum payment, no avalanche extra.
+// Capped at 40 years so debts whose minimums barely cover interest still terminate.
+const calculateMinOnlyInterest = (debts) => {
   const planDebts = cloneDebts(debts)
   let totalInterest = 0
   let month = 0
 
-  while (planDebts.some((debt) => debt.balance > 0) && month < 360) {
-    const active = planDebts.filter((debt) => debt.balance > 0)
-    const totalMinPayment = active.reduce((sum, debt) => sum + Math.min(debt.minPayment, debt.balance), 0)
-    const paymentBudget = Math.max(totalMinPayment, monthlyPayment)
-    const interestThisMonth = active.reduce((sum, debt) => {
+  while (planDebts.some((debt) => debt.balance > 0) && month < 480) {
+    for (const debt of planDebts) {
+      if (debt.balance <= 0) continue
       const interest = debt.balance * (debt.rate / 100 / 12)
+      totalInterest += interest
       debt.balance += interest
-      return sum + interest
-    }, 0)
-    totalInterest += interestThisMonth
-
-    let extra = paymentBudget
-    for (const debt of sortAvalanche(active)) {
-      if (extra <= 0) break
-      const payment = Math.min(extra, debt.balance)
-      debt.balance -= payment
-      extra -= payment
+      debt.balance -= Math.min(debt.minPayment, debt.balance)
     }
-
     month += 1
   }
 

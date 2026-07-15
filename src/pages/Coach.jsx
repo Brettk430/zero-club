@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
-import ProGate from '../components/ProGate.jsx'
 import { apiBase } from '../lib/apiBase.js'
 import { track } from '../lib/analytics.js'
 
@@ -43,11 +42,13 @@ const Coach = () => {
     if (!question.trim() || streaming) return
 
     const userText = question.trim()
+    const history = messages.slice(1) // prior turns, minus the canned welcome
     setQuestion('')
     setMessages((prev) => {
       if (prev.length === 1) track('first_miles_message') // only the welcome message exists
       return [...prev, { role: 'user', text: userText }]
     })
+    localStorage.setItem('zc_asked_miles', '1')
     setStreaming(true)
     setMessages((prev) => [...prev, { role: 'assistant', text: '' }])
 
@@ -55,7 +56,7 @@ const Coach = () => {
       const response = await fetch(`${apiBase}/api/coach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userText, debts, monthlyIncome }),
+        body: JSON.stringify({ question: userText, debts, monthlyIncome, history, progressLogs }),
       })
 
       if (!response.ok) {

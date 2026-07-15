@@ -43,7 +43,6 @@ const GroupChat = ({ cohort, user, onBack }) => {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   useEffect(() => {
-    setMessages([])
     if (!supabaseReady) return
     supabase.from('community_messages').select('*').eq('room', cohort.id)
       .order('created_at', { ascending: true }).limit(50)
@@ -161,7 +160,7 @@ const Community = () => {
   if (activeCohort) {
     return (
       <section className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-8">
-        <GroupChat cohort={activeCohort} user={user} onBack={() => setOpenId(null)} />
+        <GroupChat key={activeCohort.id} cohort={activeCohort} user={user} onBack={() => setOpenId(null)} />
       </section>
     )
   }

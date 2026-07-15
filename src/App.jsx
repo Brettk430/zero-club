@@ -1,17 +1,25 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Onboarding from './components/Onboarding.jsx'
 import Home from './pages/Home.jsx'
 import Calculator from './pages/Calculator.jsx'
 import Plan from './pages/Plan.jsx'
-import Coach from './pages/Coach.jsx'
-import Community from './pages/Community.jsx'
-import Profile from './pages/Profile.jsx'
-import Commitments from './pages/Commitments.jsx'
 import { DebtProvider } from './context/DebtContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+
+// Split secondary pages out of the initial bundle (Stripe only ships with Profile)
+const Coach = lazy(() => import('./pages/Coach.jsx'))
+const Community = lazy(() => import('./pages/Community.jsx'))
+const Profile = lazy(() => import('./pages/Profile.jsx'))
+const Commitments = lazy(() => import('./pages/Commitments.jsx'))
+
+const PageSpinner = () => (
+  <div className="flex h-64 items-center justify-center">
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400" />
+  </div>
+)
 
 const hasExistingDebts = () => {
   try {
@@ -37,18 +45,20 @@ function AppContent() {
   return (
     <BrowserRouter>
       {!onboarded && <Onboarding onComplete={completeOnboarding} />}
-      <Routes>
-        <Route element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="calculator" element={<Calculator />} />
-          <Route path="plan" element={<Plan />} />
-          <Route path="coach" element={<Coach />} />
-          <Route path="community" element={<Community />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="commitments" element={<Commitments />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={<PageSpinner />}>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="calculator" element={<Calculator />} />
+            <Route path="plan" element={<Plan />} />
+            <Route path="coach" element={<Coach />} />
+            <Route path="community" element={<Community />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="commitments" element={<Commitments />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

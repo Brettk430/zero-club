@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
         fetchProfile(session.user.id)
         identify(session.user.id, { email: session.user.email })
         if (event === 'SIGNED_IN') track('signed_in')
-        if (event === 'SIGNED_UP') track('signed_up')
       } else {
         setProfile(null)
         reset()
@@ -58,7 +57,9 @@ export const AuthProvider = ({ children }) => {
 
   const signUpWithPassword = async (email, password) => {
     if (!supabase) return { error: new Error('Supabase not configured') }
-    return supabase.auth.signUp({ email, password })
+    const result = await supabase.auth.signUp({ email, password })
+    if (!result.error) track('signed_up')
+    return result
   }
 
   const signOut = async () => {

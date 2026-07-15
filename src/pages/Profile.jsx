@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useDebt } from '../context/DebtContext.jsx'
 import { computeAchievements } from '../lib/milestones.js'
+import { UpgradeSection } from '../components/ProGate.jsx'
 
 const memberStatus = (pct) => {
   if (pct >= 100) return { label: 'Zero Club Member', color: 'bg-yellow-400 text-slate-900', dot: 'bg-yellow-400' }
@@ -36,7 +37,7 @@ const Profile = () => {
   const { debts, monthlyIncome, maxMonthlyPayment, plan } = useDebt()
 
   const username = localStorage.getItem('zc_username') || '—'
-  const hasCheckin = Boolean(localStorage.getItem('zc_seen_achievements'))
+  const hasCheckin = Boolean(localStorage.getItem('zc_checked_in'))
 
   const totalStarting = useMemo(() =>
     debts.reduce((sum, d) => sum + (Number(d.startingBalance) || Number(d.balance) || 0), 0), [debts])
@@ -190,6 +191,8 @@ const Profile = () => {
               </div>
             )}
           </div>
+
+          <UpgradeSection />
         </div>
       </div>
     </section>

@@ -20,7 +20,7 @@ const VariancePill = ({ planned, actual }) => {
   )
 }
 
-const YesNoButton = ({ value, selected, onSelect, yes }) => (
+const YesNoButton = ({ selected, onSelect, yes }) => (
   <button
     type="button"
     onClick={() => onSelect(yes ? true : false)}
@@ -131,6 +131,7 @@ const MonthlyCheckin = ({ debts }) => {
       }])
     }
 
+    localStorage.setItem('zc_checked_in', '1')
     setSubmitted(true)
     setLoading(false)
   }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useDebt } from '../context/DebtContext.jsx'
 import { track } from '../lib/analytics.js'
+import { keptStreak } from '../lib/streaks.js'
 
 const STORAGE_KEY = 'zc_commitments'
 
@@ -93,16 +94,7 @@ const CheckInModal = ({ commitment, onSave, onClose }) => {
 
 const CommitmentCard = ({ commitment, onCheckIn, onDelete }) => {
   const thisMonthEntry = commitment.checkIns?.find((c) => c.month === currentMonth)
-  const streak = useMemo(() => {
-    if (!commitment.checkIns?.length) return 0
-    const sorted = [...commitment.checkIns].sort((a, b) => a.month.localeCompare(b.month)).reverse()
-    let count = 0
-    for (const entry of sorted) {
-      if (entry.kept) count++
-      else break
-    }
-    return count
-  }, [commitment.checkIns])
+  const streak = useMemo(() => keptStreak(commitment.checkIns), [commitment.checkIns])
 
   const keptCount = commitment.checkIns?.filter((c) => c.kept).length || 0
   const total = commitment.checkIns?.length || 0
@@ -193,6 +185,7 @@ const Commitments = () => {
     })
     setCommitments(updated)
     saveCommitments(updated)
+    localStorage.setItem('zc_checked_in', '1')
     setCheckingIn(null)
   }
 
@@ -204,15 +197,7 @@ const Commitments = () => {
 
   const totalStreak = useMemo(() => {
     if (!commitments.length) return 0
-    return Math.min(...commitments.map((c) => {
-      const sorted = [...(c.checkIns || [])].sort((a, b) => a.month.localeCompare(b.month)).reverse()
-      let count = 0
-      for (const entry of sorted) {
-        if (entry.kept) count++
-        else break
-      }
-      return count
-    }))
+    return Math.min(...commitments.map((c) => keptStreak(c.checkIns)))
   }, [commitments])
 
   const checkinTarget = checkingIn ? commitments.find((c) => c.id === checkingIn) : null

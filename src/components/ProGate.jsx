@@ -4,9 +4,14 @@ import { EmbeddedCheckoutProvider, EmbeddedCheckout } from '@stripe/react-stripe
 import { useAuth } from '../context/AuthContext.jsx'
 import { apiBase } from '../lib/apiBase.js'
 
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : null
+// Lazy: Stripe.js is only fetched when the checkout modal actually opens,
+// not on every page that imports this component.
+let stripePromise = null
+const getStripe = () => {
+  if (!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) return null
+  if (!stripePromise) stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
+  return stripePromise
+}
 
 const proFeatures = [
   'Unlimited sessions with Miles',
@@ -16,6 +21,7 @@ const proFeatures = [
 ]
 
 const CheckoutModal = ({ user, onClose }) => {
+  const stripe = getStripe()
   const fetchClientSecret = useCallback(async () => {
     const res = await fetch(`${apiBase}/api/stripe/checkout`, {
       method: 'POST',
@@ -41,8 +47,8 @@ const CheckoutModal = ({ user, onClose }) => {
           </button>
         </div>
         <div className="max-h-[70vh] overflow-y-auto p-1">
-          {stripePromise ? (
-            <EmbeddedCheckoutProvider stripe={stripePromise} options={{ fetchClientSecret }}>
+          {stripe ? (
+            <EmbeddedCheckoutProvider stripe={stripe} options={{ fetchClientSecret }}>
               <EmbeddedCheckout />
             </EmbeddedCheckoutProvider>
           ) : (
@@ -188,6 +194,15 @@ const TrialSignInGate = ({ feature }) => {
       </div>
     </div>
   )
+}
+
+// Standalone upgrade surface for the Profile page — renders the right step of
+// the funnel (sign in → upgrade) and nothing once the user is already Pro.
+export const UpgradeSection = () => {
+  const { user, isPro, loading } = useAuth()
+  if (loading || isPro) return null
+  if (!user) return <TrialSignInGate feature="Miles AI coaching and accountability circles" />
+  return <UpgradeCard user={user} />
 }
 
 const ProGate = ({ children, feature = 'this feature' }) => {

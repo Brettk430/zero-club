@@ -6,6 +6,7 @@ import MonthlyCheckin from '../components/MonthlyCheckin.jsx'
 import Celebration from '../components/Celebration.jsx'
 import { apiBase } from '../lib/apiBase.js'
 import { computeAchievements, getNewlyUnlocked } from '../lib/milestones.js'
+import { monthValue } from '../lib/streaks.js'
 
 const debtColors = ['bg-blue-500', 'bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-rose-400', 'bg-teal-400']
 
@@ -61,6 +62,7 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
   const [explanation, setExplanation] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [done, setDone] = useState(false)
+  const [error, setError] = useState('')
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -71,6 +73,7 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
     if (streaming) return
     setExplanation('')
     setDone(false)
+    setError('')
     setStreaming(true)
     const target = plan.monthlyAllocation?.[0]
     const question = [
@@ -85,7 +88,11 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, debts, monthlyIncome }),
       })
-      if (!res.ok) { setStreaming(false); return }
+      if (!res.ok) {
+        setError("Miles couldn't connect right now — give it another try in a moment.")
+        setStreaming(false)
+        return
+      }
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buf = ''
@@ -103,7 +110,9 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
         }
       }
       setDone(true)
-    } catch { /* network error */ }
+    } catch {
+      setError("Miles couldn't connect right now — give it another try in a moment.")
+    }
     finally { setStreaming(false) }
   }
 
@@ -126,7 +135,10 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
           <div ref={bottomRef} />
         </div>
       )}
-      {!explanation && !streaming && (
+      {error && (
+        <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">{error}</p>
+      )}
+      {!explanation && !streaming && !error && (
         <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">Tap "Explain this plan" and Miles will walk through exactly why your money is split this way.</p>
       )}
     </div>
@@ -250,7 +262,7 @@ const Plan = () => {
         if (!byMonth[ci.month]) byMonth[ci.month] = []
         byMonth[ci.month].push(ci.kept)
       }
-      const months = Object.keys(byMonth).sort().reverse()
+      const months = Object.keys(byMonth).sort((a, b) => monthValue(b) - monthValue(a))
       let count = 0
       for (const m of months) {
         if (byMonth[m].every(Boolean)) count++

@@ -102,10 +102,14 @@ const Home = () => {
           </div>
 
           {/* Personal dashboard — shown once they have debts */}
-          {totalPaidOff > 0 ? (
+          {debts.length > 0 ? (
             <div className="mx-auto mt-10 w-full max-w-lg rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5 dark:border-emerald-800 dark:bg-emerald-950/30">
-              <p className="text-center text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Your progress</p>
-              <p className="mt-1 text-center text-4xl font-bold text-emerald-700 dark:text-emerald-400">${totalPaidOff.toLocaleString()} eliminated</p>
+              <p className="text-center text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                {totalPaidOff > 0 ? 'Your progress' : 'Your plan is live'}
+              </p>
+              <p className="mt-1 text-center text-4xl font-bold text-emerald-700 dark:text-emerald-400">
+                {totalPaidOff > 0 ? `$${totalPaidOff.toLocaleString()} eliminated` : 'Month 1 starts now'}
+              </p>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-white/70 px-4 py-3 text-center dark:bg-slate-800/50">
                   <p className="text-xs text-slate-500 dark:text-slate-400">Remaining</p>
@@ -125,10 +129,9 @@ const Home = () => {
             <div className="mx-auto mt-10 w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-900">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Zero members this month</p>
-                  <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Live
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">What a month on Zero looks like</p>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    Example
                   </span>
                 </div>
               </div>
@@ -261,7 +264,7 @@ const Home = () => {
                   </li>
                 ))}
               </ul>
-              <Link to="/coach" className="mt-8 rounded-full bg-yellow-400 py-3 text-center text-sm font-bold text-slate-900 transition hover:bg-yellow-300">
+              <Link to="/profile" className="mt-8 rounded-full bg-yellow-400 py-3 text-center text-sm font-bold text-slate-900 transition hover:bg-yellow-300">
                 Claim Founder Access — Free
               </Link>
             </div>

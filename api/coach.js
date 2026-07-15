@@ -70,11 +70,22 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { question, debts, monthlyIncome, progressLogs } = req.body || {}
+  const { question, debts, monthlyIncome, progressLogs, history } = req.body || {}
 
   if (!question?.trim()) {
     return res.status(400).json({ error: 'Question is required' })
   }
+
+  // Prior turns from this session so Miles remembers the conversation.
+  // Capped server-side; ignore malformed entries rather than failing the request.
+  const priorTurns = Array.isArray(history)
+    ? history
+        .filter((m) => (m?.role === 'user' || m?.role === 'assistant') && typeof m.text === 'string' && m.text.trim())
+        .slice(-20)
+        .map((m) => ({ role: m.role, content: m.text.trim() }))
+    : []
+  // The API requires the first message to be from the user
+  while (priorTurns.length && priorTurns[0].role === 'assistant') priorTurns.shift()
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: 'Anthropic API key not configured' })
@@ -89,7 +100,7 @@ export default async function handler(req, res) {
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: buildSystemPrompt(debts, monthlyIncome, progressLogs),
-      messages: [{ role: 'user', content: question.trim() }],
+      messages: [...priorTurns, { role: 'user', content: question.trim() }],
     })
 
     for await (const event of stream) {

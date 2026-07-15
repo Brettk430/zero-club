@@ -286,7 +286,7 @@ const Onboarding = ({ onComplete }) => {
   const [step, setStep] = useState(0)
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 dark:bg-slate-950">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-slate-50 dark:bg-slate-950">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 sm:px-8">
         <div className="flex items-center gap-2">

@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       discounts: [{ coupon: 'FOUNDER' }],
       metadata: { supabase_user_id: userId },
-      return_url: `${appUrl}/coach?upgraded=true&session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${appUrl}/profile?upgraded=true&session_id={CHECKOUT_SESSION_ID}`,
     })
 
     res.json({ clientSecret: session.client_secret })
