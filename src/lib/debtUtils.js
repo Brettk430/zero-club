@@ -27,6 +27,8 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
       monthlyPayment: 0,
       monthsUntilPayoff: 0,
       payoffDate: null,
+      paymentTooLow: false,
+      minOnlyNeverEnds: false,
       totalInterest: 0,
       milestones: [],
       interestSaved: 0,
@@ -124,8 +126,16 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
     ? monthsBetween(new Date(), monthsUntilPayoff).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : null
 
-  const minOnlyInterest = calculateMinOnlyInterest(activeDebts)
-  const interestSaved = Math.max(0, minOnlyInterest - totalInterest)
+  // If the plan never terminates (payment doesn't cover interest), the interest
+  // totals are runaway compounding artifacts, not projections — don't report them.
+  const paymentTooLow = !monthsUntilPayoff
+  const minOnly = calculateMinOnlyInterest(activeDebts)
+  // interestSaved is a number only when both simulations reach zero; null means
+  // "minimums alone never pay this off" — display sites say that instead.
+  const minOnlyNeverEnds = !minOnly.terminated
+  const interestSaved = paymentTooLow || minOnlyNeverEnds
+    ? null
+    : Math.round(Math.max(0, minOnly.totalInterest - totalInterest))
 
   // Compute the optimized per-debt payment split for month 1
   const sortedForAlloc = sortAvalanche(activeDebts)
@@ -157,15 +167,18 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
     monthlyPayment,
     monthsUntilPayoff,
     payoffDate,
-    totalInterest: Math.round(totalInterest),
+    paymentTooLow,
+    minOnlyNeverEnds,
+    totalInterest: paymentTooLow ? 0 : Math.round(totalInterest),
     milestones,
-    interestSaved: Math.round(interestSaved),
+    interestSaved,
     monthlyAllocation,
   }
 }
 
 // Baseline: each debt receives only its own minimum payment, no avalanche extra.
-// Capped at 40 years so debts whose minimums barely cover interest still terminate.
+// If any balance is still growing after 40 years, minimums alone never reach zero
+// and the accumulated interest is a compounding artifact, not a comparison figure.
 const calculateMinOnlyInterest = (debts) => {
   const planDebts = cloneDebts(debts)
   let totalInterest = 0
@@ -182,7 +195,8 @@ const calculateMinOnlyInterest = (debts) => {
     month += 1
   }
 
-  return totalInterest
+  const terminated = planDebts.every((debt) => debt.balance <= 0)
+  return { totalInterest, terminated }
 }
 
 export const simulateExtraPayment = (debts, extraAmount) => {

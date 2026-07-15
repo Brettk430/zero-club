@@ -11,6 +11,11 @@ const localApi = (env) => ({
     server.middlewares.use(async (req, res, next) => {
       if (!req.url.startsWith('/api/')) return next()
       const route = req.url.split('?')[0].replace(/^\/api\//, '')
+      // Only load modules that look like api/ route names — no traversal out of api/
+      if (!/^[\w-]+(\/[\w-]+)*$/.test(route)) {
+        res.statusCode = 404
+        return res.end(JSON.stringify({ error: 'Not found' }))
+      }
       let handler
       try {
         const mod = await server.ssrLoadModule(`/api/${route}.js`)

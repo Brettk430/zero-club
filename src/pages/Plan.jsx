@@ -80,7 +80,7 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
       `Explain my debt payoff plan in plain English — 3 to 5 sentences, conversational tone, no bullet points.`,
       `I have ${debts.length} debt(s): ${debts.map(d => `${d.name} ($${Number(d.balance).toLocaleString()} at ${d.rate}% APR, $${d.minPayment}/mo minimum${d.type === 'mortgage' ? ', mortgage' : ''})`).join('; ')}.`,
       target ? `My current attack target is ${target.name} at ${target.rate}% APR — I'm paying $${target.total.toLocaleString()}/mo there ($${target.minimum} minimum + $${target.extra} extra).` : '',
-      `My projected payoff date is ${plan.payoffDate || 'unknown'} and I'll save $${plan.interestSaved.toLocaleString()} in interest versus paying minimums only.`,
+      `My projected payoff date is ${plan.payoffDate || 'unknown'}${plan.interestSaved != null ? ` and I'll save $${plan.interestSaved.toLocaleString()} in interest versus paying minimums only` : ` — paying minimums only, I'd never reach zero`}.`,
       `Explain WHY this split is optimal, what I should focus on this month, and make it feel like advice from a knowledgeable friend — not a textbook.`,
     ].filter(Boolean).join(' ')
     try {
@@ -339,9 +339,18 @@ const Plan = () => {
                     </div>
                     <div className="rounded-2xl bg-amber-50 p-3 sm:p-4 dark:bg-amber-950/30">
                       <p className="text-xs text-amber-600 dark:text-amber-400">Interest saved</p>
-                      <p className="mt-1 text-sm font-bold text-amber-700 sm:text-base dark:text-amber-400">${plan.interestSaved.toLocaleString()}</p>
+                      {plan.interestSaved != null ? (
+                        <p className="mt-1 text-sm font-bold text-amber-700 sm:text-base dark:text-amber-400">${plan.interestSaved.toLocaleString()}</p>
+                      ) : (
+                        <p className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-400">Minimums alone would never reach zero</p>
+                      )}
                     </div>
                   </div>
+                  {plan.paymentTooLow && (
+                    <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-950/30 dark:text-rose-400">
+                      At ${plan.monthlyPayment.toLocaleString()}/mo, your payments don't outpace the interest on these balances. Raise your monthly payment — even a small bump — and the payoff date will appear.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

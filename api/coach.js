@@ -2,17 +2,20 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// Client-supplied strings are capped before entering the prompt (endpoint is public)
+const clip = (value, max) => String(value ?? '').slice(0, max)
+
 const buildProgressSection = (progressLogs) => {
   if (!progressLogs || progressLogs.length === 0) return ''
 
   const lines = progressLogs.map((log) => {
     if (!log.debt_balances?.length) return null
-    const debtSummary = log.debt_balances.map((d) => {
+    const debtSummary = log.debt_balances.slice(0, 50).map((d) => {
       const diff = Number(d.startingBalance) - Number(d.actualBalance)
       const status = diff > 0 ? `$${diff.toLocaleString()} ahead` : diff < 0 ? `$${Math.abs(diff).toLocaleString()} behind` : 'on track'
-      return `${d.name}: $${Number(d.actualBalance).toLocaleString()} actual (${status})`
+      return `${clip(d.name, 80)}: $${Number(d.actualBalance).toLocaleString()} actual (${status})`
     }).join(', ')
-    return `${log.logged_month}: ${debtSummary}${log.notes ? ` | Note: "${log.notes}"` : ''}`
+    return `${clip(log.logged_month, 40)}: ${debtSummary}${log.notes ? ` | Note: "${clip(log.notes, 500)}"` : ''}`
   }).filter(Boolean)
 
   if (!lines.length) return ''
@@ -34,7 +37,7 @@ const buildSystemPrompt = (debts, monthlyIncome, progressLogs) => {
   const highestRate = sorted[0]
 
   const debtList = sorted
-    .map((d) => `- ${d.name}: $${Number(d.balance).toLocaleString()} balance, ${d.rate}% APR, $${d.minPayment}/mo minimum`)
+    .map((d) => `- ${clip(d.name, 80)}: $${Number(d.balance).toLocaleString()} balance, ${Number(d.rate) || 0}% APR, $${Number(d.minPayment) || 0}/mo minimum`)
     .join('\n')
 
   return `Your name is Miles. You are a behavior coach for Zero, a debt accountability platform. Your job is NOT to answer generic financial questions — your job is to help users stay consistent with their debt payoff plan over months and years.
@@ -43,7 +46,7 @@ USER'S DEBT DATA:
 Monthly income: $${Number(monthlyIncome || 0).toLocaleString()}
 Total debt: $${totalBalance.toLocaleString()}
 Total minimum payments: $${totalMinPayments.toLocaleString()}/mo
-Priority debt (attack first): ${highestRate.name} at ${highestRate.rate}%
+Priority debt (attack first): ${clip(highestRate.name, 80)} at ${Number(highestRate.rate) || 0}%
 
 All debts:
 ${debtList}
@@ -70,11 +73,20 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { question, debts, monthlyIncome, progressLogs, history } = req.body || {}
+  const body = req.body || {}
+  const { question, monthlyIncome, history } = body
 
   if (!question?.trim()) {
     return res.status(400).json({ error: 'Question is required' })
   }
+
+  // This endpoint is unauthenticated — cap every client-supplied field so a
+  // single request can't stuff megabytes of text into the model context.
+  if (question.length > 2000) {
+    return res.status(400).json({ error: 'Question is too long (2000 character max)' })
+  }
+  const debts = Array.isArray(body.debts) ? body.debts.slice(0, 50) : body.debts
+  const progressLogs = Array.isArray(body.progressLogs) ? body.progressLogs.slice(-24) : body.progressLogs
 
   // Prior turns from this session so Miles remembers the conversation.
   // Capped server-side; ignore malformed entries rather than failing the request.
@@ -82,7 +94,7 @@ export default async function handler(req, res) {
     ? history
         .filter((m) => (m?.role === 'user' || m?.role === 'assistant') && typeof m.text === 'string' && m.text.trim())
         .slice(-20)
-        .map((m) => ({ role: m.role, content: m.text.trim() }))
+        .map((m) => ({ role: m.role, content: m.text.trim().slice(0, 4000) }))
     : []
   // The API requires the first message to be from the user
   while (priorTurns.length && priorTurns[0].role === 'assistant') priorTurns.shift()

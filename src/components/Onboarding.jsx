@@ -252,12 +252,28 @@ const StepPlan = ({ onComplete }) => {
           )}
         </div>
 
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-950/30">
-          <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Interest saved vs paying minimums</p>
-          <p className="mt-1 text-3xl font-bold text-emerald-700 dark:text-emerald-400">
-            ${plan.interestSaved.toLocaleString()}
-          </p>
-        </div>
+        {plan.paymentTooLow ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 dark:border-rose-900 dark:bg-rose-950/30">
+            <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 dark:text-rose-400">Heads up</p>
+            <p className="mt-1 text-sm text-rose-700 dark:text-rose-400">
+              At ${plan.monthlyPayment.toLocaleString()}/mo, interest grows faster than you're paying it down. Bump up your monthly payment on the next screen to get a payoff date.
+            </p>
+          </div>
+        ) : plan.interestSaved != null ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-950/30">
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Interest saved vs paying minimums</p>
+            <p className="mt-1 text-3xl font-bold text-emerald-700 dark:text-emerald-400">
+              ${plan.interestSaved.toLocaleString()}
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-800 dark:bg-emerald-950/30">
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Vs paying minimums only</p>
+            <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+              Minimums alone would never get you to zero. This plan does — by {plan.payoffDate}.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
           <div className="flex items-center justify-between text-sm">

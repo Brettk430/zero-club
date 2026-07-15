@@ -4,25 +4,24 @@ import { track } from '../lib/analytics.js'
 
 const DebtContext = createContext(null)
 
-export const DebtProvider = ({ children }) => {
-  const [debts, setDebts] = useState([])
-  const [monthlyIncome, setMonthlyIncome] = useState('')
-  const [maxMonthlyPayment, setMaxMonthlyPayment] = useState('')
-
-  useEffect(() => {
+// Initialize state from localStorage synchronously. Loading in an effect is not
+// safe here: the save effects below fire on mount with the initial empty values,
+// and under StrictMode's double-mount the reload pass reads that back — wiping
+// the user's stored debts.
+const loadDebts = () => {
+  try {
     const stored = window.localStorage.getItem('zero-club-debts')
-    const storedIncome = window.localStorage.getItem('zero-club-income')
-    const storedMax = window.localStorage.getItem('zero-club-max-payment')
-    if (stored) {
-      try {
-        setDebts(JSON.parse(stored).map(normalizeDebt))
-      } catch (error) {
-        console.warn('Failed to parse debt data', error)
-      }
-    }
-    if (storedIncome) setMonthlyIncome(storedIncome)
-    if (storedMax) setMaxMonthlyPayment(storedMax)
-  }, [])
+    return stored ? JSON.parse(stored).map(normalizeDebt) : []
+  } catch (error) {
+    console.warn('Failed to parse debt data', error)
+    return []
+  }
+}
+
+export const DebtProvider = ({ children }) => {
+  const [debts, setDebts] = useState(loadDebts)
+  const [monthlyIncome, setMonthlyIncome] = useState(() => window.localStorage.getItem('zero-club-income') || '')
+  const [maxMonthlyPayment, setMaxMonthlyPayment] = useState(() => window.localStorage.getItem('zero-club-max-payment') || '')
 
   useEffect(() => {
     window.localStorage.setItem('zero-club-debts', JSON.stringify(debts))
