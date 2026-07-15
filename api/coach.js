@@ -5,6 +5,25 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 // Client-supplied strings are capped before entering the prompt (endpoint is public)
 const clip = (value, max) => String(value ?? '').slice(0, max)
 
+// Best-effort per-IP rate limit. Serverless instances don't share memory, so
+// this bounds abuse per warm instance rather than globally — pair with a
+// platform-level rule (Vercel Firewall) for hard guarantees.
+const RATE_WINDOW_MS = 5 * 60 * 1000
+const RATE_MAX = 20
+const hitLog = new Map()
+const rateLimited = (ip) => {
+  if (hitLog.size > 5000) hitLog.clear()
+  const now = Date.now()
+  const recent = (hitLog.get(ip) || []).filter((t) => now - t < RATE_WINDOW_MS)
+  if (recent.length >= RATE_MAX) {
+    hitLog.set(ip, recent)
+    return true
+  }
+  recent.push(now)
+  hitLog.set(ip, recent)
+  return false
+}
+
 const buildProgressSection = (progressLogs) => {
   if (!progressLogs || progressLogs.length === 0) return ''
 
@@ -71,6 +90,11 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown'
+  if (rateLimited(ip)) {
+    return res.status(429).json({ error: 'Too many requests — give Miles a few minutes to catch his breath' })
   }
 
   const body = req.body || {}
