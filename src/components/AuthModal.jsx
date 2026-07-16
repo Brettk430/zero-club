@@ -26,17 +26,16 @@ const AuthModal = ({ onClose }) => {
     setError('')
 
     const fn = mode === 'signup' ? signUpWithPassword : signInWithPassword
-    const { error: err } = await fn(email.trim(), password.trim())
+    const { data, error: err } = await fn(email.trim(), password.trim())
 
     if (err) {
       setError(friendlyError(err.message))
+    } else if (mode === 'signup' && !data?.session) {
+      // No session means the project requires email confirmation before sign-in
+      setError('')
+      setSent(true)
     } else {
-      if (mode === 'signup') {
-        setError('')
-        setSent(true)
-      } else {
-        onClose()
-      }
+      onClose()
     }
     setLoading(false)
   }
