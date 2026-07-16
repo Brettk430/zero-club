@@ -3,6 +3,13 @@ import { useAuth } from '../context/AuthContext.jsx'
 
 const inputCls = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500'
 
+// Raw fetch errors ("Failed to fetch") read as broken code rather than a
+// connectivity problem — translate them for humans.
+const friendlyError = (message) =>
+  /fetch|network|load failed/i.test(message || '')
+    ? "Can't reach the server right now. Check your connection and try again in a minute."
+    : message
+
 const AuthModal = ({ onClose }) => {
   const { signIn, signInWithPassword, signUpWithPassword } = useAuth()
   const [mode, setMode] = useState('signin') // signin | signup | magic
@@ -22,7 +29,7 @@ const AuthModal = ({ onClose }) => {
     const { error: err } = await fn(email.trim(), password.trim())
 
     if (err) {
-      setError(err.message)
+      setError(friendlyError(err.message))
     } else {
       if (mode === 'signup') {
         setError('')
@@ -40,7 +47,7 @@ const AuthModal = ({ onClose }) => {
     setLoading(true)
     setError('')
     const { error: err } = await signIn(email.trim())
-    if (err) setError(err.message)
+    if (err) setError(friendlyError(err.message))
     else setSent(true)
     setLoading(false)
   }
