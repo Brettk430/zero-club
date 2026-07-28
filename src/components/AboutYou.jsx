@@ -8,6 +8,7 @@ const inputCls = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py
 const AboutYou = () => {
   const { user } = useAuth()
   const [form, setForm] = useState(() => loadAboutYou(user))
+  const [reminders, setReminders] = useState(() => user?.user_metadata?.reminders !== false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -33,7 +34,7 @@ const AboutYou = () => {
 
     if (user && supabase) {
       const { error: err } = await supabase.auth.updateUser({
-        data: { full_name: fullName, username, birthday: form.birthday },
+        data: { full_name: fullName, username, birthday: form.birthday, reminders },
       })
       if (err) {
         setError(err.message)
@@ -66,6 +67,18 @@ const AboutYou = () => {
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Birthday</span>
           <input type="date" value={form.birthday} onChange={set('birthday')} className={`mt-1 ${inputCls}`} />
         </label>
+
+        {user && (
+          <label className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/50">
+            <span className="text-sm text-slate-600 dark:text-slate-300">Email me monthly check-in reminders</span>
+            <input
+              type="checkbox"
+              checked={reminders}
+              onChange={(e) => { setReminders(e.target.checked); setSaved(false) }}
+              className="h-5 w-5 accent-blue-600"
+            />
+          </label>
+        )}
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 

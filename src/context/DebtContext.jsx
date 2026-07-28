@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { calculatePayoffPlan, comparePlans, normalizeDebt } from '../lib/debtUtils.js'
+import { supabase } from '../lib/supabaseClient.js'
 import { track } from '../lib/analytics.js'
 
 const DebtContext = createContext(null)
@@ -39,6 +40,50 @@ export const DebtProvider = ({ children }) => {
   useEffect(() => {
     window.localStorage.setItem('zero-club-method', method)
   }, [method])
+
+  // ── Cloud sync ──────────────────────────────────────────────────────────
+  // The plan lives in auth user_metadata (zc_data) so it follows the user
+  // across devices and into the native app. Local storage stays the source
+  // of truth on this device: cloud data is only adopted when local is empty,
+  // and every local change is pushed (debounced) while signed in.
+  const [syncUserId, setSyncUserId] = useState(null)
+  const lastPushedRef = useRef(null)
+
+  useEffect(() => {
+    if (!supabase) return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== 'INITIAL_SESSION' && event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return
+      setSyncUserId(session?.user?.id ?? null)
+      if (!session?.user) return
+
+      const cloud = session.user.user_metadata?.zc_data
+      if (!cloud) return
+      setDebts((local) => {
+        if (local.length || !Array.isArray(cloud.debts) || !cloud.debts.length) return local
+        // Adopting cloud state wholesale — mark it as already pushed
+        lastPushedRef.current = JSON.stringify(cloud)
+        setMonthlyIncome((v) => v || cloud.monthlyIncome || '')
+        setMaxMonthlyPayment((v) => v || cloud.maxMonthlyPayment || '')
+        if (cloud.method) setMethod(cloud.method)
+        return cloud.debts.map(normalizeDebt)
+      })
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!supabase || !syncUserId || !debts.length) return
+    const zcData = { debts, monthlyIncome, maxMonthlyPayment, method }
+    const payload = JSON.stringify(zcData)
+    if (payload === lastPushedRef.current) return
+    const timer = setTimeout(() => {
+      lastPushedRef.current = payload
+      supabase.auth.updateUser({ data: { zc_data: zcData } })
+        .then(({ error }) => { if (error) lastPushedRef.current = null }) // retry on next change
+        .catch(() => { lastPushedRef.current = null })
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [syncUserId, debts, monthlyIncome, maxMonthlyPayment, method])
 
   const plan = useMemo(
     () => calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, method),

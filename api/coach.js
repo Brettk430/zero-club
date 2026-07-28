@@ -39,9 +39,16 @@ const buildProgressSection = (progressLogs) => {
 
   if (!lines.length) return ''
 
+  // Months arrive as labels like "May 2026" — detect how stale the latest is
+  const latest = new Date(`1 ${progressLogs[0]?.logged_month}`)
+  const now = new Date()
+  const gap = Number.isNaN(latest.getTime())
+    ? 0
+    : (now.getFullYear() - latest.getFullYear()) * 12 + (now.getMonth() - latest.getMonth())
+
   return `\nUSER'S ACTUAL MONTHLY PROGRESS (real check-ins they logged):
 ${lines.join('\n')}
-
+${gap >= 2 ? `\nIMPORTANT: their last check-in was ${gap} months ago. They lapsed and may feel guilty about it. Normalize the gap without dwelling on it — a lapse is a data point, not a verdict — then focus on one small restart action for this week. Never lecture about the missed months.` : ''}
 Use this history to give highly personalized advice. Reference specific months, note if they're consistently ahead or behind, acknowledge hard months, and help them get back on track if needed.`
 }
 

@@ -60,7 +60,11 @@ export const calculatePayoffPlan = (debts, monthlyIncome, maxMonthlyPayment, met
   while (planDebts.some((debt) => debt.balance > 0) && month < 360) {
     const active = planDebts.filter((debt) => debt.balance > 0)
     const interestThisMonth = active.reduce((sum, debt) => {
-      const interest = debt.balance * (debt.rate / 100 / 12)
+      // Promo-rate debts (balance transfers): introRate until introMonths, then postRate
+      const rate = debt.introMonths != null && month < debt.introMonths
+        ? (debt.introRate ?? 0)
+        : (debt.postRate ?? debt.rate)
+      const interest = debt.balance * (rate / 100 / 12)
       debt.balance += interest
       return sum + interest
     }, 0)
@@ -203,6 +207,23 @@ export const comparePlans = (debts, monthlyIncome, maxMonthlyPayment) => ({
   avalanche: calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, 'avalanche'),
   snowball: calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, 'snowball'),
 })
+
+// What happens if one debt is moved to a balance-transfer card: the fee is
+// added to the balance up front, 0% during the intro window, offer APR after.
+// Returns the full re-simulated plan so callers can diff date and interest.
+export const simulateTransfer = (debts, targetId, { introMonths, feePct, postApr }, monthlyIncome, maxMonthlyPayment, method) => {
+  const modified = debts.map((debt) => {
+    if (debt.id !== targetId) return debt
+    return {
+      ...debt,
+      balance: Number(debt.balance) * (1 + Number(feePct) / 100),
+      introMonths: Number(introMonths),
+      introRate: 0,
+      postRate: Number(postApr),
+    }
+  })
+  return calculatePayoffPlan(modified, monthlyIncome, maxMonthlyPayment, method)
+}
 
 // Baseline: each debt receives only its own minimum payment, no avalanche extra.
 // If any balance is still growing after 40 years, minimums alone never reach zero

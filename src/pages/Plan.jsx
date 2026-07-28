@@ -7,7 +7,8 @@ import Celebration from '../components/Celebration.jsx'
 import { apiBase } from '../lib/apiBase.js'
 import { computeAchievements, getNewlyUnlocked } from '../lib/milestones.js'
 import { monthValue } from '../lib/streaks.js'
-import { calculatePayoffPlan } from '../lib/debtUtils.js'
+import { calculatePayoffPlan, simulateTransfer } from '../lib/debtUtils.js'
+import { supabase } from '../lib/supabaseClient.js'
 
 const debtColors = ['bg-blue-500', 'bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-rose-400', 'bg-teal-400']
 
@@ -227,6 +228,145 @@ const PayoffChart = ({ plan, totalStarting, totalPaidOff }) => {
   )
 }
 
+// ─── Recovery card ───────────────────────────────────────────────────────────
+// The moment that decides whether someone reaches zero isn't month 1 — it's
+// the month after they disappear. Detect the gap and make restarting one tap.
+
+const RecoveryCard = ({ user }) => {
+  const [lastMonth, setLastMonth] = useState(null)
+  const [gapMonths, setGapMonths] = useState(0)
+
+  useEffect(() => {
+    if (!user || !supabase) return
+    supabase.from('progress_logs')
+      .select('logged_month, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (!data?.length) return
+        const last = monthValue(data[0].logged_month)
+        if (!last) return
+        const now = new Date()
+        const gap = (now.getFullYear() - new Date(last).getFullYear()) * 12
+          + (now.getMonth() - new Date(last).getMonth())
+        if (gap >= 2) {
+          setLastMonth(data[0].logged_month)
+          setGapMonths(gap)
+        }
+      })
+  }, [user])
+
+  if (!lastMonth) return null
+
+  return (
+    <div className="rounded-3xl border border-violet-200 bg-violet-50 p-5 shadow-sm sm:p-8 dark:border-violet-900 dark:bg-violet-950/30">
+      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-violet-600 dark:text-violet-400">Welcome back</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+        Your last check-in was <span className="font-semibold">{lastMonth}</span>. Life happened — that's {gapMonths} months out of a multi-year journey, and the plan is still right here.
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link
+          to="/coach?recover=1"
+          className="flex-1 rounded-full bg-violet-600 py-3 text-center text-sm font-semibold text-white transition hover:bg-violet-500"
+        >
+          Restart with Miles →
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+// ─── Rate cut check ──────────────────────────────────────────────────────────
+// Turns "you could balance-transfer that" into a real number: fee added up
+// front, 0% for the intro window, offer APR after — versus the current plan.
+
+const RateCutCheck = ({ debts, plan, monthlyIncome, maxMonthlyPayment, method }) => {
+  const eligible = useMemo(
+    () => debts.filter((d) => Number(d.rate) >= 15 && Number(d.balance) > 0),
+    [debts],
+  )
+  const [targetId, setTargetId] = useState(eligible[0]?.id)
+  const [introMonths, setIntroMonths] = useState(15)
+  const [feePct, setFeePct] = useState(3)
+
+  const target = eligible.find((d) => d.id === targetId) || eligible[0]
+  const result = useMemo(() => {
+    if (!target || !plan.monthsUntilPayoff) return null
+    return simulateTransfer(debts, target.id, { introMonths, feePct, postApr: target.rate }, monthlyIncome, maxMonthlyPayment, method)
+  }, [debts, target, introMonths, feePct, monthlyIncome, maxMonthlyPayment, method, plan.monthsUntilPayoff])
+
+  if (!eligible.length || !result) return null
+
+  const saved = plan.totalInterest - result.totalInterest
+  const sooner = plan.monthsUntilPayoff - result.monthsUntilPayoff
+  const worthIt = saved > 100
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
+      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Rate cut check</p>
+      <p className="mt-2 text-xs leading-5 text-slate-400 dark:text-slate-500">
+        A 0% balance-transfer card could defuse your high-interest debt. Here's the math with a typical offer:
+      </p>
+
+      <div className="mt-4 space-y-3">
+        {eligible.length > 1 && (
+          <select
+            value={target.id}
+            onChange={(e) => setTargetId(e.target.value)}
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+          >
+            {eligible.map((d) => (
+              <option key={d.id} value={d.id}>{d.name} — ${Number(d.balance).toLocaleString()} at {d.rate}%</option>
+            ))}
+          </select>
+        )}
+        <div className="flex gap-2 text-xs">
+          <div className="flex-1">
+            <p className="mb-1 text-slate-400 dark:text-slate-500">0% intro period</p>
+            <div className="flex rounded-full border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800">
+              {[12, 15, 18, 21].map((m) => (
+                <button key={m} type="button" onClick={() => setIntroMonths(m)}
+                  className={`flex-1 rounded-full py-1.5 font-medium transition ${introMonths === m ? 'bg-blue-600 text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {m}mo
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="w-24">
+            <p className="mb-1 text-slate-400 dark:text-slate-500">Fee</p>
+            <div className="flex rounded-full border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800">
+              {[3, 5].map((f) => (
+                <button key={f} type="button" onClick={() => setFeePct(f)}
+                  className={`flex-1 rounded-full py-1.5 font-medium transition ${feePct === f ? 'bg-blue-600 text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {f}%
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={`mt-4 rounded-2xl p-4 ${worthIt ? 'bg-emerald-50 dark:bg-emerald-950/30' : 'bg-slate-50 dark:bg-slate-800'}`}>
+        {worthIt ? (
+          <p className="text-sm text-slate-700 dark:text-slate-200">
+            Transferring <span className="font-semibold">{target.name}</span> ({introMonths} months at 0%, {feePct}% fee) would save about{' '}
+            <span className="font-bold text-emerald-700 dark:text-emerald-400">${saved.toLocaleString()}</span>
+            {sooner > 0 && <> and finish <span className="font-bold text-emerald-700 dark:text-emerald-400">{sooner} month{sooner === 1 ? '' : 's'} sooner</span></>}.
+          </p>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            At these terms a transfer doesn't meaningfully beat your current plan — your attack is already working.
+          </p>
+        )}
+      </div>
+      <p className="mt-3 text-xs leading-5 text-slate-400 dark:text-slate-500">
+        Requires good enough credit to qualify, and only works if the old card stays at $0 after the transfer. Ask Miles if it's right for you.
+      </p>
+    </div>
+  )
+}
+
 // ─── Miles explainer ─────────────────────────────────────────────────────────
 
 const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
@@ -404,7 +544,7 @@ const KeyEventsList = ({ milestones }) => {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const Plan = () => {
-  const { debts, monthlyIncome, plan, method, setMethod, planComparison } = useDebt()
+  const { debts, monthlyIncome, maxMonthlyPayment, plan, method, setMethod, planComparison } = useDebt()
   const { user } = useAuth()
   const [milestoneView, setMilestoneView] = useState('events')
   const [celebration, setCelebration] = useState(null)
@@ -474,6 +614,9 @@ const Plan = () => {
 
           <div className="flex flex-col gap-4 sm:gap-6">
 
+            {/* Missed check-ins? Make restarting one tap */}
+            {user && <RecoveryCard user={user} />}
+
             {/* Progress profile */}
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-10 dark:border-slate-700 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-4">
@@ -528,6 +671,9 @@ const Plan = () => {
 
             {/* Payoff curve */}
             <PayoffChart plan={plan} totalStarting={totalStarting} totalPaidOff={totalPaidOff} />
+
+            {/* Balance-transfer math for high-APR debts */}
+            <RateCutCheck debts={debts} plan={plan} monthlyIncome={monthlyIncome} maxMonthlyPayment={maxMonthlyPayment} method={method} />
 
             {/* Achievements */}
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
@@ -37,11 +37,8 @@ const Coach = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
-    if (!question.trim() || streaming) return
-
-    const userText = question.trim()
+  const sendMessage = async (userText) => {
+    if (!userText || streaming) return
     const history = messages.slice(1) // prior turns, minus the canned welcome
     setQuestion('')
     setMessages((prev) => {
@@ -120,6 +117,26 @@ const Coach = () => {
       setStreaming(false)
     }
   }
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    sendMessage(question.trim())
+  }
+
+  // Arriving from the "Restart with Miles" recovery card: open the
+  // conversation for them — the lowest-motivation moment deserves zero friction.
+  // Ref guard: state-based guards don't stop StrictMode's double effect run.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const recoverFiredRef = useRef(false)
+  useEffect(() => {
+    if (recoverFiredRef.current) return
+    if (searchParams.get('recover') !== '1') return
+    if (!coachReady || streaming || messages.length > 1) return
+    recoverFiredRef.current = true
+    setSearchParams({}, { replace: true })
+    sendMessage("I fell off my plan for a couple of months and I'm coming back. No guilt trip — just help me restart. What should this week look like?")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, coachReady])
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-6 text-slate-900 sm:px-6 sm:py-16 dark:text-slate-100">
