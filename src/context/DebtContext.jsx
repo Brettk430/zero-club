@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { calculateAvalanchePlan, normalizeDebt } from '../lib/debtUtils.js'
+import { calculatePayoffPlan, comparePlans, normalizeDebt } from '../lib/debtUtils.js'
 import { track } from '../lib/analytics.js'
 
 const DebtContext = createContext(null)
@@ -22,6 +22,7 @@ export const DebtProvider = ({ children }) => {
   const [debts, setDebts] = useState(loadDebts)
   const [monthlyIncome, setMonthlyIncome] = useState(() => window.localStorage.getItem('zero-club-income') || '')
   const [maxMonthlyPayment, setMaxMonthlyPayment] = useState(() => window.localStorage.getItem('zero-club-max-payment') || '')
+  const [method, setMethod] = useState(() => window.localStorage.getItem('zero-club-method') || 'avalanche')
 
   useEffect(() => {
     window.localStorage.setItem('zero-club-debts', JSON.stringify(debts))
@@ -35,8 +36,18 @@ export const DebtProvider = ({ children }) => {
     window.localStorage.setItem('zero-club-max-payment', maxMonthlyPayment)
   }, [maxMonthlyPayment])
 
+  useEffect(() => {
+    window.localStorage.setItem('zero-club-method', method)
+  }, [method])
+
   const plan = useMemo(
-    () => calculateAvalanchePlan(debts, monthlyIncome, maxMonthlyPayment),
+    () => calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, method),
+    [debts, monthlyIncome, maxMonthlyPayment, method],
+  )
+
+  // Both strategies, for the method chooser on the Plan page
+  const planComparison = useMemo(
+    () => (debts.length ? comparePlans(debts, monthlyIncome, maxMonthlyPayment) : null),
     [debts, monthlyIncome, maxMonthlyPayment],
   )
 
@@ -67,7 +78,7 @@ export const DebtProvider = ({ children }) => {
 
   return (
     <DebtContext.Provider
-      value={{ debts, monthlyIncome, setMonthlyIncome, maxMonthlyPayment, setMaxMonthlyPayment, plan, addDebt, updateDebt, removeDebt }}
+      value={{ debts, monthlyIncome, setMonthlyIncome, maxMonthlyPayment, setMaxMonthlyPayment, method, setMethod, plan, planComparison, addDebt, updateDebt, removeDebt }}
     >
       {children}
     </DebtContext.Provider>

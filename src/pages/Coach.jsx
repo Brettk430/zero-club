@@ -7,7 +7,7 @@ import { apiBase } from '../lib/apiBase.js'
 import { track } from '../lib/analytics.js'
 
 const Coach = () => {
-  const { debts, monthlyIncome } = useDebt()
+  const { debts, monthlyIncome, method } = useDebt()
   const { user } = useAuth()
   const [progressLogs, setProgressLogs] = useState([])
   const [question, setQuestion] = useState('')
@@ -56,7 +56,7 @@ const Coach = () => {
       const response = await fetch(`${apiBase}/api/coach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userText, debts, monthlyIncome, history, progressLogs }),
+        body: JSON.stringify({ question: userText, debts, monthlyIncome, history, progressLogs, method }),
       })
 
       if (!response.ok) {

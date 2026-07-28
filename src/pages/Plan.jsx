@@ -7,6 +7,7 @@ import Celebration from '../components/Celebration.jsx'
 import { apiBase } from '../lib/apiBase.js'
 import { computeAchievements, getNewlyUnlocked } from '../lib/milestones.js'
 import { monthValue } from '../lib/streaks.js'
+import { calculatePayoffPlan } from '../lib/debtUtils.js'
 
 const debtColors = ['bg-blue-500', 'bg-sky-400', 'bg-violet-400', 'bg-amber-400', 'bg-rose-400', 'bg-teal-400']
 
@@ -56,6 +57,176 @@ const AchievementBadge = ({ achievement }) => (
   </div>
 )
 
+// ─── Method chooser ──────────────────────────────────────────────────────────
+// Avalanche minimizes interest; snowball front-loads wins. The honest tradeoff
+// is shown with the user's real numbers so the choice is theirs.
+
+const MethodChooser = ({ method, setMethod, comparison }) => {
+  if (!comparison) return null
+  const { avalanche, snowball } = comparison
+  const extraCost = Math.max(0, snowball.totalInterest - avalanche.totalInterest)
+  const winGap = avalanche.firstDebtPaidMonth && snowball.firstDebtPaidMonth
+    ? avalanche.firstDebtPaidMonth - snowball.firstDebtPaidMonth
+    : 0
+  const identical = extraCost === 0 && winGap === 0
+
+  const options = [
+    {
+      id: 'avalanche',
+      name: 'Avalanche',
+      tagline: 'Highest interest rate first',
+      stat: `Cheapest path — ${extraCost > 0 ? `saves $${extraCost.toLocaleString()} vs snowball` : 'lowest total interest'}`,
+    },
+    {
+      id: 'snowball',
+      name: 'Snowball',
+      tagline: 'Smallest balance first',
+      stat: winGap > 0
+        ? `First debt gone ${winGap} month${winGap === 1 ? '' : 's'} sooner — easier to stick with`
+        : 'Early wins build the habit',
+    },
+  ]
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
+      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">Your strategy</p>
+      <p className="mt-2 text-xs leading-5 text-slate-400 dark:text-slate-500">
+        {identical
+          ? 'For your debts both methods play out the same — smallest is also highest-rate.'
+          : 'Math favors avalanche. Habit-building favors snowball. Both get you to zero — pick the one you’ll stick with.'}
+      </p>
+      <div className="mt-4 space-y-2">
+        {options.map((opt) => (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => setMethod(opt.id)}
+            className={`w-full rounded-2xl border p-4 text-left transition ${
+              method === opt.id
+                ? 'border-blue-400 bg-blue-50 ring-2 ring-blue-100 dark:border-blue-600 dark:bg-blue-950/30 dark:ring-blue-900'
+                : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600'
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-semibold text-slate-900 dark:text-slate-100">{opt.name}</p>
+              {method === opt.id && (
+                <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">Active</span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{opt.tagline}</p>
+            {!identical && <p className="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">{opt.stat}</p>}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Turbo boost ─────────────────────────────────────────────────────────────
+// What an extra monthly payment actually buys — months and dollars.
+
+const TurboBoost = ({ debts, plan, method }) => {
+  const [extra, setExtra] = useState(100)
+  const boosted = useMemo(
+    () => calculatePayoffPlan(debts, 0, plan.monthlyPayment + extra, method),
+    [debts, plan.monthlyPayment, extra, method],
+  )
+
+  if (!plan.monthsUntilPayoff) return null
+  const monthsSooner = Math.max(0, plan.monthsUntilPayoff - boosted.monthsUntilPayoff)
+  const interestSaved = Math.max(0, plan.totalInterest - boosted.totalInterest)
+
+  return (
+    <div className="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-5 shadow-sm sm:p-8 dark:border-emerald-900 dark:bg-emerald-950/20">
+      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-400">Turbo boost</p>
+      <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">What would a little more each month actually do?</p>
+      <div className="mt-4 flex gap-2">
+        {[50, 100, 250].map((amt) => (
+          <button
+            key={amt}
+            type="button"
+            onClick={() => setExtra(amt)}
+            className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${
+              extra === amt
+                ? 'bg-emerald-600 text-white'
+                : 'bg-white text-slate-600 hover:bg-emerald-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+            }`}
+          >
+            +${amt}
+          </button>
+        ))}
+      </div>
+      <div className="mt-4 rounded-2xl bg-white p-4 dark:bg-slate-900">
+        {monthsSooner > 0 || interestSaved > 0 ? (
+          <>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              An extra <span className="font-bold text-emerald-700 dark:text-emerald-400">${extra}/mo</span> makes you debt-free{' '}
+              <span className="font-bold text-emerald-700 dark:text-emerald-400">{monthsSooner} month{monthsSooner === 1 ? '' : 's'} sooner</span>
+              {boosted.payoffDate ? ` (${boosted.payoffDate})` : ''}
+            </p>
+            {interestSaved > 0 && (
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                …and keeps <span className="font-bold text-emerald-700 dark:text-emerald-400">${interestSaved.toLocaleString()}</span> out of your lenders' pockets.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-slate-500 dark:text-slate-400">You're already close to the fastest possible payoff at this budget.</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Payoff curve ────────────────────────────────────────────────────────────
+// The falling line: projected total balance, month by month, down to zero.
+
+const PayoffChart = ({ plan, totalStarting, totalPaidOff }) => {
+  const series = plan.balanceByMonth
+  if (!series || series.length < 2 || !plan.monthsUntilPayoff) return null
+
+  const W = 600
+  const H = 180
+  const PAD = 8
+  const max = series[0]
+  const x = (i) => PAD + (i / (series.length - 1)) * (W - PAD * 2)
+  const y = (v) => PAD + (1 - v / max) * (H - PAD * 2)
+  const line = series.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
+  const area = `${line} L${x(series.length - 1).toFixed(1)},${H - PAD} L${PAD},${H - PAD} Z`
+
+  const payoffEvents = plan.milestones.filter((m) => m.label.endsWith('paid off'))
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">The road to zero</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">{plan.payoffDate}</p>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-4 w-full" role="img" aria-label="Projected debt balance falling to zero">
+        <path d={area} className="fill-blue-100 dark:fill-blue-950/50" />
+        <path d={line} fill="none" strokeWidth="2.5" strokeLinecap="round" className="stroke-blue-600 dark:stroke-blue-400" />
+        {payoffEvents.map((m) => (
+          <circle key={m.label} cx={x(Math.min(m.month, series.length - 1))} cy={y(series[Math.min(m.month, series.length - 1)])} r="4.5" className="fill-yellow-400 stroke-white stroke-2 dark:stroke-slate-900">
+            <title>{`${m.label} — month ${m.month}`}</title>
+          </circle>
+        ))}
+      </svg>
+      <div className="mt-2 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+        <span>Today · ${series[0].toLocaleString()}</span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-2.5 rounded-full bg-yellow-400" /> debt eliminated
+        </span>
+        <span>$0</span>
+      </div>
+      {totalPaidOff > 0 && totalStarting > 0 && (
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+          You've already knocked out <span className="font-semibold text-emerald-600 dark:text-emerald-400">${totalPaidOff.toLocaleString()}</span> of your original ${totalStarting.toLocaleString()}.
+        </p>
+      )}
+    </div>
+  )
+}
+
 // ─── Miles explainer ─────────────────────────────────────────────────────────
 
 const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
@@ -86,7 +257,7 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
     try {
       const res = await fetch(`${apiBase}/api/coach`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, debts, monthlyIncome }),
+        body: JSON.stringify({ question, debts, monthlyIncome, method: plan.method }),
       })
       if (!res.ok) {
         setError("Miles couldn't connect right now — give it another try in a moment.")
@@ -233,7 +404,7 @@ const KeyEventsList = ({ milestones }) => {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const Plan = () => {
-  const { debts, monthlyIncome, plan } = useDebt()
+  const { debts, monthlyIncome, plan, method, setMethod, planComparison } = useDebt()
   const { user } = useAuth()
   const [milestoneView, setMilestoneView] = useState('events')
   const [celebration, setCelebration] = useState(null)
@@ -355,6 +526,9 @@ const Plan = () => {
               </div>
             </div>
 
+            {/* Payoff curve */}
+            <PayoffChart plan={plan} totalStarting={totalStarting} totalPaidOff={totalPaidOff} />
+
             {/* Achievements */}
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-amber-600 dark:text-amber-400">Achievements</p>
@@ -412,10 +586,15 @@ const Plan = () => {
           {/* Sidebar */}
           <div className="flex flex-col gap-4 sm:gap-6 lg:self-start">
 
+            {/* Strategy */}
+            <MethodChooser method={method} setMethod={setMethod} comparison={planComparison} />
+
             {/* Monthly payment split */}
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-600 dark:text-blue-400">This month's attack</p>
-              <p className="mt-2 text-xs leading-5 text-slate-400 dark:text-slate-500">Minimums everywhere, extra dollars hit the highest rate first.</p>
+              <p className="mt-2 text-xs leading-5 text-slate-400 dark:text-slate-500">
+                Minimums everywhere, extra dollars hit the {method === 'snowball' ? 'smallest balance' : 'highest rate'} first.
+              </p>
               <ol className="mt-6 space-y-3">
                 {plan.monthlyAllocation.map((item, i) => (
                   <li key={item.id || i} className={`rounded-2xl p-4 ${item.isTarget ? 'border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30' : 'bg-slate-50 dark:bg-slate-800'}`}>
@@ -441,6 +620,8 @@ const Plan = () => {
                 <p className="text-lg font-bold text-slate-900 dark:text-slate-100">${plan.monthlyPayment.toLocaleString()}</p>
               </div>
             </div>
+
+            <TurboBoost debts={debts} plan={plan} method={method} />
 
             <PlanExplainer debts={debts} plan={plan} monthlyIncome={monthlyIncome} />
             {user && <MonthlyCheckin debts={debts} />}

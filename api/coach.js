@@ -45,15 +45,18 @@ ${lines.join('\n')}
 Use this history to give highly personalized advice. Reference specific months, note if they're consistently ahead or behind, acknowledge hard months, and help them get back on track if needed.`
 }
 
-const buildSystemPrompt = (debts, monthlyIncome, progressLogs) => {
+const buildSystemPrompt = (debts, monthlyIncome, progressLogs, method) => {
   if (!debts || debts.length === 0) {
     return `Your name is Miles. You are a behavior coach for Zero, a debt accountability platform. The user hasn't entered their debts yet. Encourage them to add their debts in the Calculator so you can give them personalized, specific guidance. Keep it warm, brief, and actionable.`
   }
 
   const totalBalance = debts.reduce((sum, d) => sum + Number(d.balance || 0), 0)
   const totalMinPayments = debts.reduce((sum, d) => sum + Number(d.minPayment || 0), 0)
-  const sorted = [...debts].sort((a, b) => Number(b.rate) - Number(a.rate))
-  const highestRate = sorted[0]
+  const snowball = method === 'snowball'
+  const sorted = [...debts].sort((a, b) =>
+    snowball ? Number(a.balance) - Number(b.balance) : Number(b.rate) - Number(a.rate))
+  const priority = sorted[0]
+  const highApr = debts.filter((d) => Number(d.rate) >= 20)
 
   const debtList = sorted
     .map((d) => `- ${clip(d.name, 80)}: $${Number(d.balance).toLocaleString()} balance, ${Number(d.rate) || 0}% APR, $${Number(d.minPayment) || 0}/mo minimum`)
@@ -65,11 +68,17 @@ USER'S DEBT DATA:
 Monthly income: $${Number(monthlyIncome || 0).toLocaleString()}
 Total debt: $${totalBalance.toLocaleString()}
 Total minimum payments: $${totalMinPayments.toLocaleString()}/mo
-Priority debt (attack first): ${clip(highestRate.name, 80)} at ${Number(highestRate.rate) || 0}%
+Chosen strategy: ${snowball ? 'Snowball (smallest balance first — they chose early wins over minimum interest; respect that choice)' : 'Avalanche (highest rate first)'}
+Priority debt (attack first): ${clip(priority.name, 80)} — $${Number(priority.balance).toLocaleString()} at ${Number(priority.rate) || 0}%
 
 All debts:
 ${debtList}
 ${buildProgressSection(progressLogs)}
+REAL-WORLD LEVERS (raise when relevant, never as a lecture):
+${highApr.length ? `- ${highApr.map((d) => clip(d.name, 80)).join(', ')} ${highApr.length === 1 ? 'is' : 'are'} at 20%+ APR. A 0% balance-transfer card or a consolidation loan could cut that dramatically — worth suggesting they check their options if their credit allows. Mention the transfer fee (3-5%) honestly.` : '- No debts above 20% APR — consolidation is unlikely to beat their current plan.'}
+- If they mention surprise expenses knocking them off plan, recommend pausing the attack to build a $500–$1,000 starter buffer first. A plan that survives a flat tire beats a perfect plan that doesn't.
+- Interest rates on cards are sometimes negotiable — one phone call asking for a lower APR costs nothing.
+
 YOUR COACHING APPROACH:
 - Focus on behavior, not math. The user knows what to do — help them actually do it.
 - When someone is struggling: acknowledge it, find the specific obstacle, suggest one concrete action.
@@ -111,6 +120,7 @@ export default async function handler(req, res) {
   }
   const debts = Array.isArray(body.debts) ? body.debts.slice(0, 50) : body.debts
   const progressLogs = Array.isArray(body.progressLogs) ? body.progressLogs.slice(-24) : body.progressLogs
+  const method = body.method === 'snowball' ? 'snowball' : 'avalanche'
 
   // Prior turns from this session so Miles remembers the conversation.
   // Capped server-side; ignore malformed entries rather than failing the request.
@@ -135,7 +145,7 @@ export default async function handler(req, res) {
     const stream = await client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: buildSystemPrompt(debts, monthlyIncome, progressLogs),
+      system: buildSystemPrompt(debts, monthlyIncome, progressLogs, method),
       messages: [...priorTurns, { role: 'user', content: question.trim() }],
     })
 

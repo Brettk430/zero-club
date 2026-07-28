@@ -11,6 +11,13 @@ export const normalizeDebt = (debt) => ({
 export const sortAvalanche = (debts) =>
   [...debts].sort((a, b) => b.rate - a.rate || a.balance - b.balance)
 
+// Snowball: smallest balance first — costs more interest than avalanche but
+// front-loads wins, which is what keeps most people on the plan.
+export const sortSnowball = (debts) =>
+  [...debts].sort((a, b) => a.balance - b.balance || b.rate - a.rate)
+
+const sorterFor = (method) => (method === 'snowball' ? sortSnowball : sortAvalanche)
+
 const cloneDebts = (debts) => debts.map((debt) => ({ ...debt }))
 
 const monthsBetween = (start, count) => {
@@ -19,10 +26,12 @@ const monthsBetween = (start, count) => {
   return date
 }
 
-export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) => {
+export const calculatePayoffPlan = (debts, monthlyIncome, maxMonthlyPayment, method = 'avalanche') => {
+  const sortByMethod = sorterFor(method)
   const activeDebts = debts.map(normalizeDebt).filter((debt) => debt.balance > 0)
   if (!activeDebts.length) {
     return {
+      method,
       payoffOrder: [],
       monthlyPayment: 0,
       monthsUntilPayoff: 0,
@@ -32,6 +41,8 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
       totalInterest: 0,
       milestones: [],
       interestSaved: 0,
+      balanceByMonth: [],
+      firstDebtPaidMonth: 0,
     }
   }
 
@@ -44,6 +55,7 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
   let month = 0
   let totalInterest = 0
   const milestones = []
+  const balanceByMonth = [startingBalance]
 
   while (planDebts.some((debt) => debt.balance > 0) && month < 360) {
     const active = planDebts.filter((debt) => debt.balance > 0)
@@ -64,7 +76,7 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
     totalInterest += interestThisMonth + pmiThisMonth
     let paymentBudget = monthlyPayment - pmiThisMonth
 
-    const paymentOrder = sortAvalanche(active)
+    const paymentOrder = sortByMethod(active)
     for (const debt of paymentOrder) {
       if (paymentBudget <= 0) break
       const minDue = Math.min(debt.minPayment, debt.balance)
@@ -74,7 +86,7 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
     }
 
     while (paymentBudget > 0) {
-      const nextDebt = sortAvalanche(planDebts.filter((debt) => debt.balance > 0))[0]
+      const nextDebt = sortByMethod(planDebts.filter((debt) => debt.balance > 0))[0]
       if (!nextDebt) break
       const extraPaid = Math.min(paymentBudget, nextDebt.balance)
       nextDebt.balance -= extraPaid
@@ -118,6 +130,7 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
       })
     }
 
+    balanceByMonth.push(planDebts.reduce((sum, debt) => sum + Math.max(debt.balance, 0), 0))
     month += 1
   }
 
@@ -138,7 +151,7 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
     : Math.round(Math.max(0, minOnly.totalInterest - totalInterest))
 
   // Compute the optimized per-debt payment split for month 1
-  const sortedForAlloc = sortAvalanche(activeDebts)
+  const sortedForAlloc = sortByMethod(activeDebts)
   const totalPmiAlloc = sortedForAlloc.reduce((sum, d) => {
     if (d.type === 'mortgage' && d.homeValue > 0 && d.balance > d.homeValue * 0.8) {
       return sum + d.balance * ((d.pmiRate || 0.85) / 100 / 12)
@@ -157,8 +170,14 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
     return { id: d.id, name: d.name, rate: d.rate, minimum: d.minPayment, extra, pmi, total: d.minPayment + extra, isTarget: i === 0 }
   })
 
+  const firstDebtPaidMonth = planDebts.reduce(
+    (min, debt) => (debt.__paidAt && (!min || debt.__paidAt < min) ? debt.__paidAt : min),
+    0,
+  )
+
   return {
-    payoffOrder: sortAvalanche(activeDebts).map((debt) => ({
+    method,
+    payoffOrder: sortByMethod(activeDebts).map((debt) => ({
       ...debt,
       originalBalance: debt.balance,
       rate: debt.rate,
@@ -173,8 +192,17 @@ export const calculateAvalanchePlan = (debts, monthlyIncome, maxMonthlyPayment) 
     milestones,
     interestSaved,
     monthlyAllocation,
+    balanceByMonth,
+    firstDebtPaidMonth,
   }
 }
+
+// Both strategies side by side, so the user can make an informed choice:
+// avalanche minimizes interest, snowball reaches its first payoff sooner.
+export const comparePlans = (debts, monthlyIncome, maxMonthlyPayment) => ({
+  avalanche: calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, 'avalanche'),
+  snowball: calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, 'snowball'),
+})
 
 // Baseline: each debt receives only its own minimum payment, no avalanche extra.
 // If any balance is still growing after 40 years, minimums alone never reach zero
