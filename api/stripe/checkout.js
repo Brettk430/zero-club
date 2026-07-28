@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     const appUrl = origin || process.env.APP_URL || 'http://localhost:5173'
 
     const session = await stripe.checkout.sessions.create({
-      ui_mode: 'embedded',
+      ui_mode: 'embedded_page',
       mode: 'subscription',
       customer_email: userEmail || undefined,
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],

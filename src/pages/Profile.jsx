@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { useDebt } from '../context/DebtContext.jsx'
 import { computeAchievements } from '../lib/milestones.js'
 import { UpgradeSection } from '../components/ProGate.jsx'
+import AboutYou from '../components/AboutYou.jsx'
+import { isBirthdayToday, loadAboutYou } from '../lib/aboutYou.js'
 
 const memberStatus = (pct) => {
   if (pct >= 100) return { label: 'Zero Club Member', color: 'bg-yellow-400 text-slate-900', dot: 'bg-yellow-400' }
@@ -36,7 +38,10 @@ const Profile = () => {
   const { user, isPro } = useAuth()
   const { debts, monthlyIncome, maxMonthlyPayment, plan } = useDebt()
 
-  const username = localStorage.getItem('zc_username') || '—'
+  const about = loadAboutYou(user)
+  const username = about.username || '—'
+  const displayName = about.fullName || user?.email
+  const birthdayToday = isBirthdayToday(about.birthday)
   const hasCheckin = Boolean(localStorage.getItem('zc_checked_in'))
 
   const totalStarting = useMemo(() =>
@@ -63,6 +68,17 @@ const Profile = () => {
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-6 text-slate-900 sm:px-6 sm:py-16 dark:text-slate-100">
+      {birthdayToday && (
+        <div className="mb-4 rounded-3xl border border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50 px-6 py-5 text-center sm:mb-6 dark:border-yellow-800 dark:from-yellow-950/40 dark:to-amber-950/40">
+          <p className="text-2xl">🎂</p>
+          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-400">
+            Happy birthday{about.fullName ? `, ${about.fullName.split(' ')[0]}` : ''}!
+          </p>
+          <p className="mt-1 text-sm text-amber-600 dark:text-amber-500">
+            Another year wiser — and every month, closer to zero. Enjoy your day.
+          </p>
+        </div>
+      )}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_1.4fr]">
 
         {/* Left — profile card */}
@@ -72,10 +88,13 @@ const Profile = () => {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white">
-                {user?.email?.[0]?.toUpperCase() ?? '?'}
+                {(displayName?.[0] ?? '?').toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="truncate font-bold text-slate-900 dark:text-slate-100">{user?.email}</p>
+                <p className="truncate font-bold text-slate-900 dark:text-slate-100">{displayName}</p>
+                {about.fullName && user?.email && (
+                  <p className="truncate text-xs text-slate-400 dark:text-slate-500">{user.email}</p>
+                )}
                 <p className="text-sm text-slate-400 dark:text-slate-500">Community: <span className="font-medium text-slate-600 dark:text-slate-300">{username}</span></p>
               </div>
             </div>
@@ -125,6 +144,9 @@ const Profile = () => {
               </div>
             )}
           </div>
+
+          {/* About you — name, username, birthday */}
+          <AboutYou />
 
           {/* Achievements */}
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
