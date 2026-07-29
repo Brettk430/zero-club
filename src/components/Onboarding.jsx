@@ -6,7 +6,7 @@ const inputCls = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py
 
 const ProgressBar = ({ step }) => (
   <div className="flex gap-1.5">
-    {[0, 1, 2].map((i) => (
+    {[0, 1, 2, 3].map((i) => (
       <div
         key={i}
         className={`h-1 flex-1 rounded-full transition-all duration-300 ${
@@ -22,6 +22,71 @@ const RemoveIcon = () => (
     <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z" />
   </svg>
 )
+
+const GOALS = [
+  'Breathe easier every month',
+  'Buy a home someday',
+  'Debt-free before 30',
+  'Stop living paycheck to paycheck',
+  'Build wealth after zero',
+]
+
+const StepWelcome = ({ onNext }) => {
+  const [name, setName] = useState(() => localStorage.getItem('zc_fullname') || '')
+  const [goal, setGoal] = useState(() => localStorage.getItem('zc_goal') || '')
+
+  const handleNext = () => {
+    if (name.trim()) localStorage.setItem('zc_fullname', name.trim())
+    if (goal) localStorage.setItem('zc_goal', goal)
+    onNext()
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Step 1 of 4</p>
+      <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">First things first.</h2>
+      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">This journey takes a while — let's make it personal.</p>
+
+      <label className="mt-6 block text-xs font-medium text-slate-500 dark:text-slate-400">
+        What should we call you?
+        <input
+          type="text"
+          className={`mt-1 ${inputCls}`}
+          placeholder="Your first name"
+          value={name}
+          maxLength={40}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </label>
+
+      <p className="mt-6 text-xs font-medium text-slate-500 dark:text-slate-400">Why zero? Pick the one that hits.</p>
+      <div className="mt-2 space-y-2">
+        {GOALS.map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => setGoal(g)}
+            className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
+              goal === g
+                ? 'border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+            }`}
+          >
+            {g}
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={handleNext}
+        className="mt-6 w-full rounded-full bg-slate-900 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+      >
+        Continue →
+      </button>
+    </div>
+  )
+}
 
 const StepDebts = ({ onNext }) => {
   const { debts, addDebt, updateDebt, removeDebt } = useDebt()
@@ -49,7 +114,7 @@ const StepDebts = ({ onNext }) => {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Step 1 of 3</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Step 2 of 4</p>
       <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">What do you owe?</h2>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Add your debts and we'll rank them for fastest payoff.</p>
 
@@ -157,7 +222,7 @@ const StepBudget = ({ onNext, onBack }) => {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Step 2 of 3</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Step 3 of 4</p>
       <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">What's your monthly budget?</h2>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
         Extra money beyond your minimums gets aimed at your highest-rate debt first.
@@ -237,7 +302,7 @@ const StepPlan = ({ onComplete }) => {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Step 3 of 3</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">Step 4 of 4</p>
       <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">Here's your plan.</h2>
       <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
         Same debt, same income — this is what the avalanche method gets you.
@@ -328,9 +393,10 @@ const Onboarding = ({ onComplete }) => {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8">
         <div className="mx-auto max-w-md">
-          {step === 0 && <StepDebts onNext={() => setStep(1)} />}
-          {step === 1 && <StepBudget onNext={() => setStep(2)} onBack={() => setStep(0)} />}
-          {step === 2 && <StepPlan onComplete={onComplete} />}
+          {step === 0 && <StepWelcome onNext={() => setStep(1)} />}
+          {step === 1 && <StepDebts onNext={() => setStep(2)} />}
+          {step === 2 && <StepBudget onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+          {step === 3 && <StepPlan onComplete={onComplete} />}
         </div>
       </div>
     </div>

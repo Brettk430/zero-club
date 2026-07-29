@@ -10,8 +10,17 @@ const friendlyError = (message) =>
     ? "Can't reach the server right now. Check your connection and try again in a minute."
     : message
 
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
+    <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 01-2.39 3.62v3h3.87c2.26-2.09 3.57-5.17 3.57-8.81z" />
+    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3c-1.07.72-2.45 1.15-4.06 1.15-3.12 0-5.77-2.11-6.71-4.95H1.29v3.1A11.99 11.99 0 0012 24z" />
+    <path fill="#FBBC05" d="M5.29 14.29a7.22 7.22 0 010-4.58v-3.1H1.29a12.01 12.01 0 000 10.78l4-3.1z" />
+    <path fill="#EA4335" d="M12 4.76c1.76 0 3.34.6 4.58 1.79l3.44-3.43A11.98 11.98 0 0012 0 11.99 11.99 0 001.29 6.61l4 3.1C6.23 6.87 8.88 4.76 12 4.76z" />
+  </svg>
+)
+
 const AuthModal = ({ onClose }) => {
-  const { signIn, signInWithPassword, signUpWithPassword } = useAuth()
+  const { signIn, signInWithPassword, signUpWithPassword, signInWithGoogle } = useAuth()
   const [mode, setMode] = useState('signin') // signin | signup | magic
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -91,6 +100,25 @@ const AuthModal = ({ onClose }) => {
           </>
         ) : (
           <>
+            <button
+              type="button"
+              onClick={async () => {
+                setError('')
+                const { error: err } = await signInWithGoogle()
+                if (err) setError(friendlyError(err.message))
+              }}
+              className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-100 dark:bg-slate-700" />
+              <span className="text-xs text-slate-400">or use email</span>
+              <div className="h-px flex-1 bg-slate-100 dark:bg-slate-700" />
+            </div>
+
             {/* Tabs */}
             <div className="flex rounded-full border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-700 dark:bg-slate-800">
               {[['signin', 'Sign in'], ['signup', 'Create account']].map(([m, label]) => (

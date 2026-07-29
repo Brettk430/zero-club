@@ -62,6 +62,14 @@ export const AuthProvider = ({ children }) => {
     return result
   }
 
+  const signInWithGoogle = async () => {
+    if (!supabase) return { error: new Error('Supabase not configured') }
+    return supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+  }
+
   const signOut = async () => {
     if (!supabase) return
     await supabase.auth.signOut()
@@ -71,7 +79,7 @@ export const AuthProvider = ({ children }) => {
   const isPro = profile?.is_pro ?? false
 
   return (
-    <AuthContext.Provider value={{ user, profile, isPro, loading, signIn, signInWithPassword, signUpWithPassword, signOut }}>
+    <AuthContext.Provider value={{ user, profile, isPro, loading, signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   )

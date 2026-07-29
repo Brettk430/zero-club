@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { calculatePayoffPlan, comparePlans, normalizeDebt } from '../lib/debtUtils.js'
+import { loadPayments, savePayments, makePayment } from '../lib/payments.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { track } from '../lib/analytics.js'
 
@@ -24,6 +25,7 @@ export const DebtProvider = ({ children }) => {
   const [monthlyIncome, setMonthlyIncome] = useState(() => window.localStorage.getItem('zero-club-income') || '')
   const [maxMonthlyPayment, setMaxMonthlyPayment] = useState(() => window.localStorage.getItem('zero-club-max-payment') || '')
   const [method, setMethod] = useState(() => window.localStorage.getItem('zero-club-method') || 'avalanche')
+  const [payments, setPayments] = useState(loadPayments)
 
   useEffect(() => {
     window.localStorage.setItem('zero-club-debts', JSON.stringify(debts))
@@ -40,6 +42,10 @@ export const DebtProvider = ({ children }) => {
   useEffect(() => {
     window.localStorage.setItem('zero-club-method', method)
   }, [method])
+
+  useEffect(() => {
+    savePayments(payments)
+  }, [payments])
 
   // ── Cloud sync ──────────────────────────────────────────────────────────
   // The plan lives in auth user_metadata (zc_data) so it follows the user
@@ -65,6 +71,7 @@ export const DebtProvider = ({ children }) => {
         setMonthlyIncome((v) => v || cloud.monthlyIncome || '')
         setMaxMonthlyPayment((v) => v || cloud.maxMonthlyPayment || '')
         if (cloud.method) setMethod(cloud.method)
+        if (Array.isArray(cloud.payments)) setPayments((p) => (p.length ? p : cloud.payments))
         return cloud.debts.map(normalizeDebt)
       })
     })
@@ -73,7 +80,8 @@ export const DebtProvider = ({ children }) => {
 
   useEffect(() => {
     if (!supabase || !syncUserId || !debts.length) return
-    const zcData = { debts, monthlyIncome, maxMonthlyPayment, method }
+    // Metadata has size limits — the most recent payments are plenty for sync
+    const zcData = { debts, monthlyIncome, maxMonthlyPayment, method, payments: payments.slice(-500) }
     const payload = JSON.stringify(zcData)
     if (payload === lastPushedRef.current) return
     const timer = setTimeout(() => {
@@ -83,7 +91,7 @@ export const DebtProvider = ({ children }) => {
         .catch(() => { lastPushedRef.current = null })
     }, 1500)
     return () => clearTimeout(timer)
-  }, [syncUserId, debts, monthlyIncome, maxMonthlyPayment, method])
+  }, [syncUserId, debts, monthlyIncome, maxMonthlyPayment, method, payments])
 
   const plan = useMemo(
     () => calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, method),
@@ -121,9 +129,25 @@ export const DebtProvider = ({ children }) => {
     setDebts((prev) => prev.filter((debt) => debt.id !== id))
   }
 
+  // The core action: log a payment against a debt. Reduces the balance,
+  // records the payment, and returns the payment so callers can celebrate.
+  const logPayment = (debtId, amount, note = '') => {
+    const value = Number(amount)
+    if (!value || value <= 0) return null
+    const debt = debts.find((d) => d.id === debtId)
+    if (!debt) return null
+    const payment = makePayment({ debtId, debtName: debt.name || 'debt', amount: Math.min(value, debt.balance), note })
+    setDebts((prev) => prev.map((d) => (
+      d.id === debtId ? { ...d, balance: Math.max(0, d.balance - value) } : d
+    )))
+    setPayments((prev) => [...prev, payment])
+    track('payment_logged')
+    return payment
+  }
+
   return (
     <DebtContext.Provider
-      value={{ debts, monthlyIncome, setMonthlyIncome, maxMonthlyPayment, setMaxMonthlyPayment, method, setMethod, plan, planComparison, addDebt, updateDebt, removeDebt }}
+      value={{ debts, monthlyIncome, setMonthlyIncome, maxMonthlyPayment, setMaxMonthlyPayment, method, setMethod, plan, planComparison, payments, logPayment, addDebt, updateDebt, removeDebt }}
     >
       {children}
     </DebtContext.Provider>

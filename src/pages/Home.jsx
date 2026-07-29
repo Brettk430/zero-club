@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
+import Dashboard from '../components/Dashboard.jsx'
 
 const demoMembers = [
   { name: 'SteadyFalcon22', paid: 31200, pct: 78, months: 14, color: 'bg-blue-500' },
@@ -63,16 +63,12 @@ const features = [
 ]
 
 const Home = () => {
-  const { debts, plan } = useDebt()
+  const { debts } = useDebt()
 
-  const totalPaidOff = useMemo(() =>
-    debts.reduce((sum, d) => {
-      const start = Number(d.startingBalance) || Number(d.balance) || 0
-      const current = Number(d.balance) || 0
-      return sum + Math.max(0, start - current)
-    }, 0),
-    [debts]
-  )
+  // Members open the app to their progress, not a pitch — Strava rules.
+  if (debts.length > 0) {
+    return <Dashboard />
+  }
 
   return (
     <div className="text-slate-900 dark:text-slate-100">
@@ -81,50 +77,21 @@ const Home = () => {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-20">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-12 dark:border-slate-700 dark:bg-slate-900">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
-              Accountability platform
-            </span>
-            <h1 className="mt-6 text-4xl font-bold leading-[1.1] tracking-tight text-slate-900 dark:text-slate-100 sm:text-6xl">
-              Debt freedom is a habit.<br />
-              <span className="text-blue-600 dark:text-blue-400">We build it with you.</span>
+            <h1 className="mt-2 text-5xl font-bold leading-[1.05] tracking-tight text-slate-900 dark:text-slate-100 sm:text-7xl">
+              Become debt free.<br />
+              <span className="text-emerald-600 dark:text-emerald-400">Together.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400 sm:text-lg sm:leading-8">
-              You already know how to get out of debt. The hard part is staying consistent for 3–10 years. Zero is the accountability platform that keeps you on track — month after month, until you're done.
+              Track your progress. Celebrate every payment. Join people working toward financial freedom — and actually getting there.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3 sm:mt-10">
-              <Link to="/commitments" className="rounded-full bg-yellow-400 px-7 py-3.5 text-sm font-bold text-slate-900 transition hover:bg-yellow-300">
-                Make your commitment
-              </Link>
-              <Link to="/calculator" className="rounded-full border border-slate-200 bg-white px-7 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                Build your plan
+              <Link to="/calculator" className="rounded-full bg-slate-900 px-8 py-4 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
+                Start your journey
               </Link>
             </div>
           </div>
 
-          {/* Personal dashboard — shown once they have debts */}
-          {debts.length > 0 ? (
-            <div className="mx-auto mt-10 w-full max-w-lg rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-5 dark:border-emerald-800 dark:bg-emerald-950/30">
-              <p className="text-center text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                {totalPaidOff > 0 ? 'Your progress' : 'Your plan is live'}
-              </p>
-              <p className="mt-1 text-center text-4xl font-bold text-emerald-700 dark:text-emerald-400">
-                {totalPaidOff > 0 ? `$${totalPaidOff.toLocaleString()} eliminated` : 'Month 1 starts now'}
-              </p>
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-white/70 px-4 py-3 text-center dark:bg-slate-800/50">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Remaining</p>
-                  <p className="mt-0.5 font-bold text-slate-900 dark:text-slate-100">${debts.reduce((s, d) => s + Number(d.balance || 0), 0).toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl bg-white/70 px-4 py-3 text-center dark:bg-slate-800/50">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Debt-free by</p>
-                  <p className="mt-0.5 font-bold text-slate-900 dark:text-slate-100">{plan.payoffDate || '—'}</p>
-                </div>
-              </div>
-              <Link to="/plan" className="mt-4 flex w-full items-center justify-center rounded-full bg-emerald-600 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700">
-                Go to your Journey →
-              </Link>
-            </div>
-          ) : (
+          {(
             /* Simulation for new visitors */
             <div className="mx-auto mt-10 w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="border-b border-slate-100 bg-white px-5 py-3 dark:border-slate-700 dark:bg-slate-900">
