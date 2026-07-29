@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import Onboarding from './components/Onboarding.jsx'
@@ -8,12 +8,14 @@ import Plan from './pages/Plan.jsx'
 import { DebtProvider } from './context/DebtContext.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { recordVisit } from './lib/payments.js'
 
 // Split secondary pages out of the initial bundle (Stripe only ships with Profile)
 const Coach = lazy(() => import('./pages/Coach.jsx'))
 const Community = lazy(() => import('./pages/Community.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const Commitments = lazy(() => import('./pages/Commitments.jsx'))
+const Progress = lazy(() => import('./pages/Progress.jsx'))
 
 const PageSpinner = () => (
   <div className="flex h-64 items-center justify-center">
@@ -42,6 +44,11 @@ function AppContent() {
     setOnboarded(true)
   }
 
+  // Days-active streak counts calendar days the app was opened
+  useEffect(() => {
+    recordVisit()
+  }, [])
+
   return (
     <BrowserRouter>
       {!onboarded && <Onboarding onComplete={completeOnboarding} />}
@@ -51,6 +58,7 @@ function AppContent() {
             <Route index element={<Home />} />
             <Route path="calculator" element={<Calculator />} />
             <Route path="plan" element={<Plan />} />
+            <Route path="progress" element={<Progress />} />
             <Route path="coach" element={<Coach />} />
             <Route path="community" element={<Community />} />
             <Route path="profile" element={<Profile />} />

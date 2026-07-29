@@ -51,6 +51,73 @@ export const paymentStreakWeeks = (payments) => {
   return streak
 }
 
+const monthKey = (date) => {
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+// Last N calendar months (oldest → newest, current month included) with
+// payment totals — powers the monthly bars and "months on schedule".
+export const paymentsByMonth = (payments, months = 6) => {
+  const out = []
+  const cursor = new Date()
+  cursor.setDate(1)
+  cursor.setMonth(cursor.getMonth() - (months - 1))
+  for (let i = 0; i < months; i++) {
+    const key = monthKey(cursor)
+    const inMonth = payments.filter((p) => monthKey(p.date) === key)
+    out.push({
+      key,
+      label: cursor.toLocaleDateString('en-US', { month: 'short' }),
+      total: totalPaid(inMonth),
+      count: inMonth.length,
+    })
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+  return out
+}
+
+// Months (since the first payment) where total logged >= the plan's monthly
+// payment. "On schedule" is a celebration, never a stick.
+export const monthsOnSchedule = (payments, monthlyTarget) => {
+  if (!payments.length || !monthlyTarget) return 0
+  const totals = {}
+  for (const p of payments) {
+    const key = monthKey(p.date)
+    totals[key] = (totals[key] || 0) + Number(p.amount)
+  }
+  return Object.values(totals).filter((t) => t >= monthlyTarget).length
+}
+
+// Daily totals for the activity heatmap (day key -> amount)
+export const paymentsByDay = (payments) => {
+  const out = {}
+  for (const p of payments) {
+    const key = new Date(p.date).toISOString().slice(0, 10)
+    out[key] = (out[key] || 0) + Number(p.amount)
+  }
+  return out
+}
+
+// Days-active tracking: one key per calendar day the app was opened.
+const VISITS_KEY = 'zc_visit_days'
+
+export const recordVisit = () => {
+  try {
+    const days = new Set(JSON.parse(window.localStorage.getItem(VISITS_KEY) || '[]'))
+    days.add(new Date().toISOString().slice(0, 10))
+    window.localStorage.setItem(VISITS_KEY, JSON.stringify([...days].slice(-400)))
+  } catch { /* tracking only — never break the app over it */ }
+}
+
+export const visitDayCount = () => {
+  try {
+    return JSON.parse(window.localStorage.getItem(VISITS_KEY) || '[]').length
+  } catch {
+    return 0
+  }
+}
+
 // A different line every day — deterministic so it doesn't change on reload.
 const MOTIVATION = [
   'Every payment is a vote for the person you’re becoming.',
