@@ -24,6 +24,40 @@ const rateLimited = (ip) => {
   return false
 }
 
+// Per-account daily cap. Zero Club is free, so Miles is the one genuine
+// per-user cost — this keeps an enthusiastic member from running up an
+// unbounded Anthropic bill. Set well above normal use: a heavy day is a
+// handful of messages, not dozens.
+const DAILY_MESSAGE_CAP = 25
+const dailyLog = new Map() // `${userId}:${YYYY-MM-DD}` -> count
+
+// Cost attribution, NOT authorization: we read `sub` from the access token
+// without verifying its signature. Forging one only moves a request between
+// buckets — the per-IP limit above remains the actual abuse boundary — and
+// this avoids a blocking round-trip to Supabase on every message.
+const accountFromToken = (authHeader) => {
+  const token = (authHeader || '').replace(/^Bearer\s+/i, '')
+  if (!token.includes('.')) return null
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString('utf8'))
+    if (!payload?.sub) return null
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null
+    return payload.sub
+  } catch {
+    return null
+  }
+}
+
+const overDailyCap = (userId) => {
+  if (!userId) return false
+  const key = `${userId}:${new Date().toISOString().slice(0, 10)}`
+  if (dailyLog.size > 10000) dailyLog.clear()
+  const count = dailyLog.get(key) || 0
+  if (count >= DAILY_MESSAGE_CAP) return true
+  dailyLog.set(key, count + 1)
+  return false
+}
+
 const buildProgressSection = (progressLogs) => {
   if (!progressLogs || progressLogs.length === 0) return ''
 
@@ -149,6 +183,12 @@ export default async function handler(req, res) {
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown'
   if (rateLimited(ip)) {
     return res.status(429).json({ error: 'Too many requests — give Miles a few minutes to catch his breath' })
+  }
+
+  if (overDailyCap(accountFromToken(req.headers.authorization))) {
+    return res.status(429).json({
+      error: "You've hit today's coaching limit — Miles will be right here tomorrow. Your plan and progress are unaffected.",
+    })
   }
 
   const body = req.body || {}

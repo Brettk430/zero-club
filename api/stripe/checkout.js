@@ -1,5 +1,13 @@
 import Stripe from 'stripe'
 
+// NOT REACHABLE FROM THE UI as of Aug 2026 — Zero Club is free for founding
+// members and no checkout is offered. Kept for when a paid tier ships.
+//
+// WARNING before re-enabling: the FOUNDER coupon below is 100% off with
+// duration "forever" in live mode. Every session created with it produces a
+// permanently free subscription that cannot be repriced without migrating
+// those customers. Drop the discount (or swap in a time-limited coupon)
+// before pointing users at this endpoint again.
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export default async function handler(req, res) {

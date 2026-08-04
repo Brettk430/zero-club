@@ -75,9 +75,14 @@ const Coach = () => {
     setMessages((prev) => [...prev, { role: 'assistant', text: '' }])
 
     try {
+      // Send the session token so usage is counted per account, not per IP
+      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null
       const response = await fetch(`${apiBase}/api/coach`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ question: userText, debts, monthlyIncome, history, progressLogs, method, activity }),
       })
 

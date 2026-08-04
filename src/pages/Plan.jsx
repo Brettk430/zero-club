@@ -395,8 +395,13 @@ const PlanExplainer = ({ debts, plan, monthlyIncome }) => {
       `Explain WHY this split is optimal, what I should focus on this month, and make it feel like advice from a knowledgeable friend — not a textbook.`,
     ].filter(Boolean).join(' ')
     try {
+      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null
       const res = await fetch(`${apiBase}/api/coach`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ question, debts, monthlyIncome, method: plan.method }),
       })
       if (!res.ok) {

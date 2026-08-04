@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useDebt } from '../context/DebtContext.jsx'
 import { computeAchievements } from '../lib/milestones.js'
-import { UpgradeSection } from '../components/ProGate.jsx'
+import FoundingMember from '../components/FoundingMember.jsx'
 import AboutYou from '../components/AboutYou.jsx'
 import Referral from '../components/Referral.jsx'
 import { isBirthdayToday, loadAboutYou } from '../lib/aboutYou.js'
@@ -216,7 +216,7 @@ const Profile = () => {
           </div>
 
           <Referral />
-          <UpgradeSection />
+          {user && <FoundingMember />}
         </div>
       </div>
     </section>
