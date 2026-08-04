@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { calculatePayoffPlan, comparePlans, normalizeDebt } from '../lib/debtUtils.js'
 import { loadPayments, savePayments, makePayment } from '../lib/payments.js'
+import { loadGoals, saveGoals, makeGoal } from '../lib/savings.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { track } from '../lib/analytics.js'
 
@@ -26,6 +27,7 @@ export const DebtProvider = ({ children }) => {
   const [maxMonthlyPayment, setMaxMonthlyPayment] = useState(() => window.localStorage.getItem('zero-club-max-payment') || '')
   const [method, setMethod] = useState(() => window.localStorage.getItem('zero-club-method') || 'avalanche')
   const [payments, setPayments] = useState(loadPayments)
+  const [goals, setGoals] = useState(loadGoals)
 
   useEffect(() => {
     window.localStorage.setItem('zero-club-debts', JSON.stringify(debts))
@@ -46,6 +48,10 @@ export const DebtProvider = ({ children }) => {
   useEffect(() => {
     savePayments(payments)
   }, [payments])
+
+  useEffect(() => {
+    saveGoals(goals)
+  }, [goals])
 
   // ── Cloud sync ──────────────────────────────────────────────────────────
   // The plan lives in auth user_metadata (zc_data) so it follows the user
@@ -72,6 +78,7 @@ export const DebtProvider = ({ children }) => {
         setMaxMonthlyPayment((v) => v || cloud.maxMonthlyPayment || '')
         if (cloud.method) setMethod(cloud.method)
         if (Array.isArray(cloud.payments)) setPayments((p) => (p.length ? p : cloud.payments))
+        if (Array.isArray(cloud.goals)) setGoals((g) => (g.length ? g : cloud.goals))
         return cloud.debts.map(normalizeDebt)
       })
     })
@@ -81,7 +88,7 @@ export const DebtProvider = ({ children }) => {
   useEffect(() => {
     if (!supabase || !syncUserId || !debts.length) return
     // Metadata has size limits — the most recent payments are plenty for sync
-    const zcData = { debts, monthlyIncome, maxMonthlyPayment, method, payments: payments.slice(-500) }
+    const zcData = { debts, monthlyIncome, maxMonthlyPayment, method, payments: payments.slice(-500), goals }
     const payload = JSON.stringify(zcData)
     if (payload === lastPushedRef.current) return
     const timer = setTimeout(() => {
@@ -91,7 +98,7 @@ export const DebtProvider = ({ children }) => {
         .catch(() => { lastPushedRef.current = null })
     }, 1500)
     return () => clearTimeout(timer)
-  }, [syncUserId, debts, monthlyIncome, maxMonthlyPayment, method, payments])
+  }, [syncUserId, debts, monthlyIncome, maxMonthlyPayment, method, payments, goals])
 
   const plan = useMemo(
     () => calculatePayoffPlan(debts, monthlyIncome, maxMonthlyPayment, method),
@@ -129,6 +136,33 @@ export const DebtProvider = ({ children }) => {
     setDebts((prev) => prev.filter((debt) => debt.id !== id))
   }
 
+  const addGoal = ({ name, target, kind }) => {
+    const goal = makeGoal({ name, target, kind })
+    setGoals((prev) => [...prev, goal])
+    track('goal_created')
+    return goal
+  }
+
+  const removeGoal = (id) => setGoals((prev) => prev.filter((g) => g.id !== id))
+
+  // Contributing to savings is a win too — same shape as logging a payment.
+  const contributeToGoal = (goalId, amount) => {
+    const value = Number(amount)
+    if (!value || value <= 0) return null
+    let updated = null
+    setGoals((prev) => prev.map((g) => {
+      if (g.id !== goalId) return g
+      updated = {
+        ...g,
+        saved: Math.max(0, Number(g.saved) + value),
+        contributions: [...(g.contributions || []), { amount: value, date: new Date().toISOString() }],
+      }
+      return updated
+    }))
+    track('goal_contribution')
+    return updated
+  }
+
   // The core action: log a payment against a debt. Reduces the balance,
   // records the payment, and returns the payment so callers can celebrate.
   const logPayment = (debtId, amount, note = '') => {
@@ -147,7 +181,13 @@ export const DebtProvider = ({ children }) => {
 
   return (
     <DebtContext.Provider
-      value={{ debts, monthlyIncome, setMonthlyIncome, maxMonthlyPayment, setMaxMonthlyPayment, method, setMethod, plan, planComparison, payments, logPayment, addDebt, updateDebt, removeDebt }}
+      value={{
+        debts, monthlyIncome, setMonthlyIncome, maxMonthlyPayment, setMaxMonthlyPayment,
+        method, setMethod, plan, planComparison,
+        payments, logPayment,
+        goals, addGoal, removeGoal, contributeToGoal,
+        addDebt, updateDebt, removeDebt,
+      }}
     >
       {children}
     </DebtContext.Provider>

@@ -57,8 +57,14 @@ export const AuthProvider = ({ children }) => {
 
   const signUpWithPassword = async (email, password) => {
     if (!supabase) return { error: new Error('Supabase not configured') }
-    const result = await supabase.auth.signUp({ email, password })
-    if (!result.error) track('signed_up')
+    // Attribute the invite that brought them here, if any
+    const referredBy = localStorage.getItem('zc_ref') || undefined
+    const result = await supabase.auth.signUp({
+      email,
+      password,
+      options: referredBy ? { data: { referred_by: referredBy } } : undefined,
+    })
+    if (!result.error) track('signed_up', referredBy ? { referred_by: referredBy } : undefined)
     return result
   }
 

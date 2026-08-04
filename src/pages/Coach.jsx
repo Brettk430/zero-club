@@ -5,9 +5,11 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { apiBase } from '../lib/apiBase.js'
 import { track } from '../lib/analytics.js'
+import { paymentStreakWeeks, totalPaid } from '../lib/payments.js'
+import { bufferGoal, hasBuffer } from '../lib/savings.js'
 
 const Coach = () => {
-  const { debts, monthlyIncome, method } = useDebt()
+  const { debts, monthlyIncome, method, payments, goals } = useDebt()
   const { user } = useAuth()
   const [progressLogs, setProgressLogs] = useState([])
   const [question, setQuestion] = useState('')
@@ -21,6 +23,29 @@ const Coach = () => {
   const bottomRef = useRef(null)
 
   const coachReady = useMemo(() => debts.length > 0, [debts.length])
+
+  // What Miles needs to know about the core loop: payments, streak, buffer.
+  const activity = useMemo(() => {
+    const now = new Date()
+    const thisMonthPaid = payments
+      .filter((p) => {
+        const d = new Date(p.date)
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+      })
+      .reduce((s, p) => s + Number(p.amount), 0)
+    const last = payments.length ? new Date(payments[payments.length - 1].date) : null
+    const buffer = bufferGoal(goals)
+    return {
+      paidTotal: totalPaid(payments),
+      paymentCount: payments.length,
+      streakWeeks: paymentStreakWeeks(payments),
+      thisMonthPaid,
+      lastPaymentDays: last ? Math.floor((now - last) / 86400000) : null,
+      buffer: buffer
+        ? { saved: Number(buffer.saved), target: Number(buffer.target), funded: hasBuffer(goals) }
+        : null,
+    }
+  }, [payments, goals])
 
   useEffect(() => {
     if (!user || !supabase) return
@@ -53,7 +78,7 @@ const Coach = () => {
       const response = await fetch(`${apiBase}/api/coach`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userText, debts, monthlyIncome, history, progressLogs, method }),
+        body: JSON.stringify({ question: userText, debts, monthlyIncome, history, progressLogs, method, activity }),
       })
 
       if (!response.ok) {
@@ -185,15 +210,16 @@ const Coach = () => {
           {coachReady && messages.length <= 1 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {[
+                'What if I pay $300 extra a month?',
+                'Can I afford a $400 purchase right now?',
                 'Give me one action I can take this week',
                 'I had a tough month — help me get back on track',
                 'Where am I leaking money?',
-                'How close am I to paying off my highest-rate debt?',
               ].map((prompt) => (
                 <button
                   key={prompt}
                   type="button"
-                  onClick={() => setQuestion(prompt)}
+                  onClick={() => sendMessage(prompt)}
                   className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-blue-700 dark:hover:bg-blue-950/30 dark:hover:text-blue-400"
                 >
                   {prompt}

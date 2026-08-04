@@ -7,6 +7,7 @@ import { getNewlyUnlocked } from '../lib/milestones.js'
 import { postMilestone } from '../lib/feed.js'
 import LogPayment from './LogPayment.jsx'
 import Celebration from './Celebration.jsx'
+import SafetyNet from './SafetyNet.jsx'
 
 // Member home screen — every element answers one question:
 // "Am I closer to debt-free than yesterday?"
@@ -143,6 +144,11 @@ const Dashboard = () => {
         <Link to="/plan" className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
           View plan →
         </Link>
+      </div>
+
+      {/* Safety net — the thing that keeps the plan alive */}
+      <div className="mt-4">
+        <SafetyNet />
       </div>
 
       {/* Recent activity */}

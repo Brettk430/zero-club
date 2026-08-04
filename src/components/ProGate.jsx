@@ -13,11 +13,14 @@ const getStripe = () => {
   return stripePromise
 }
 
+// Reflects what the product actually does today. Nothing here is gated yet —
+// founders get everything — but this is the value the paid tier will carry.
 const proFeatures = [
-  'Unlimited sessions with Miles',
-  'Cohort community access',
-  'What-if scenario analysis',
-  'Priority support',
+  'Unlimited coaching with Miles',
+  'Payment logging, streaks & milestones',
+  'Progress charts and monthly recaps',
+  'Community feed and groups',
+  'Rate-cut and what-if scenario tools',
 ]
 
 const CheckoutModal = ({ user, onClose }) => {

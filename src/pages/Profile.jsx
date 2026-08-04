@@ -5,6 +5,7 @@ import { useDebt } from '../context/DebtContext.jsx'
 import { computeAchievements } from '../lib/milestones.js'
 import { UpgradeSection } from '../components/ProGate.jsx'
 import AboutYou from '../components/AboutYou.jsx'
+import Referral from '../components/Referral.jsx'
 import { isBirthdayToday, loadAboutYou } from '../lib/aboutYou.js'
 
 const memberStatus = (pct) => {
@@ -214,6 +215,7 @@ const Profile = () => {
             )}
           </div>
 
+          <Referral />
           <UpgradeSection />
         </div>
       </div>

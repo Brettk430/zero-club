@@ -47,6 +47,11 @@ function AppContent() {
   // Days-active streak counts calendar days the app was opened
   useEffect(() => {
     recordVisit()
+    // Remember who invited them; attributed to the account at sign-up
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    if (ref && !localStorage.getItem('zc_ref')) {
+      localStorage.setItem('zc_ref', ref.slice(0, 12).toUpperCase())
+    }
   }, [])
 
   return (

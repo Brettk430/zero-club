@@ -52,7 +52,36 @@ ${gap >= 2 ? `\nIMPORTANT: their last check-in was ${gap} months ago. They lapse
 Use this history to give highly personalized advice. Reference specific months, note if they're consistently ahead or behind, acknowledge hard months, and help them get back on track if needed.`
 }
 
-const buildSystemPrompt = (debts, monthlyIncome, progressLogs, method) => {
+// Payments are the app's core loop — Miles is useless if he can't see them.
+const buildActivitySection = (activity) => {
+  if (!activity) return ''
+  const { paidTotal, paymentCount, streakWeeks, lastPaymentDays, thisMonthPaid, buffer } = activity
+  const lines = []
+
+  if (paymentCount) {
+    lines.push(`Payments logged: ${paymentCount} totalling $${Number(paidTotal || 0).toLocaleString()}`)
+    lines.push(`Logged this month: $${Number(thisMonthPaid || 0).toLocaleString()}`)
+    if (streakWeeks > 0) lines.push(`Current streak: ${streakWeeks} consecutive week(s) with a payment`)
+    if (lastPaymentDays != null) lines.push(`Last payment: ${lastPaymentDays} day(s) ago`)
+  } else {
+    lines.push('No payments logged yet — the habit hasn\'t started.')
+  }
+
+  if (buffer) {
+    lines.push(buffer.funded
+      ? `Safety net: FUNDED ($${Number(buffer.saved).toLocaleString()} of $${Number(buffer.target).toLocaleString()}). Surprise expenses won't derail them — encourage maximum debt attack.`
+      : `Safety net: $${Number(buffer.saved).toLocaleString()} of $${Number(buffer.target).toLocaleString()} saved. Until it's full, a surprise bill turns into new debt.`)
+  } else {
+    lines.push('Safety net: none started. If they mention stress, surprise costs, or falling off plan, suggest a $1,000 starter buffer before extra debt payments.')
+  }
+
+  const stale = lastPaymentDays != null && lastPaymentDays > 45
+  return `\nTHEIR ACTIVITY IN THE APP:
+${lines.join('\n')}
+${stale ? 'IMPORTANT: it has been a while since their last logged payment. Welcome them back warmly, no guilt, and name one small action for this week.' : ''}`
+}
+
+const buildSystemPrompt = (debts, monthlyIncome, progressLogs, method, activity) => {
   if (!debts || debts.length === 0) {
     return `Your name is Miles. You are a behavior coach for Zero, a debt accountability platform. The user hasn't entered their debts yet. Encourage them to add their debts in the Calculator so you can give them personalized, specific guidance. Keep it warm, brief, and actionable.`
   }
@@ -80,7 +109,16 @@ Priority debt (attack first): ${clip(priority.name, 80)} — $${Number(priority.
 
 All debts:
 ${debtList}
+${buildActivitySection(activity)}
 ${buildProgressSection(progressLogs)}
+ANSWERING "CAN I AFFORD THIS?":
+This is the highest-value question they can ask you, and it is never a yes/no lecture.
+Translate the purchase into their own numbers: what it costs in payoff time (roughly
+purchase ÷ their monthly payment = months added), and what the same money does against
+their priority debt. Then let them decide — say plainly that one purchase rarely ruins
+a plan, and that a plan they resent is one they'll quit. If they have no safety net and
+the purchase is large, that's the more urgent point. Never shame a want.
+
 REAL-WORLD LEVERS (raise when relevant, never as a lecture):
 ${highApr.length ? `- ${highApr.map((d) => clip(d.name, 80)).join(', ')} ${highApr.length === 1 ? 'is' : 'are'} at 20%+ APR. A 0% balance-transfer card or a consolidation loan could cut that dramatically — worth suggesting they check their options if their credit allows. Mention the transfer fee (3-5%) honestly.` : '- No debts above 20% APR — consolidation is unlikely to beat their current plan.'}
 - If they mention surprise expenses knocking them off plan, recommend pausing the attack to build a $500–$1,000 starter buffer first. A plan that survives a flat tire beats a perfect plan that doesn't.
@@ -128,6 +166,23 @@ export default async function handler(req, res) {
   const debts = Array.isArray(body.debts) ? body.debts.slice(0, 50) : body.debts
   const progressLogs = Array.isArray(body.progressLogs) ? body.progressLogs.slice(-24) : body.progressLogs
   const method = body.method === 'snowball' ? 'snowball' : 'avalanche'
+  // Compact activity summary computed client-side; clamp the numbers we trust
+  const activity = body.activity && typeof body.activity === 'object'
+    ? {
+        paidTotal: Number(body.activity.paidTotal) || 0,
+        paymentCount: Number(body.activity.paymentCount) || 0,
+        streakWeeks: Number(body.activity.streakWeeks) || 0,
+        thisMonthPaid: Number(body.activity.thisMonthPaid) || 0,
+        lastPaymentDays: body.activity.lastPaymentDays == null ? null : Number(body.activity.lastPaymentDays),
+        buffer: body.activity.buffer
+          ? {
+              saved: Number(body.activity.buffer.saved) || 0,
+              target: Number(body.activity.buffer.target) || 0,
+              funded: Boolean(body.activity.buffer.funded),
+            }
+          : null,
+      }
+    : null
 
   // Prior turns from this session so Miles remembers the conversation.
   // Capped server-side; ignore malformed entries rather than failing the request.
@@ -152,7 +207,7 @@ export default async function handler(req, res) {
     const stream = await client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: buildSystemPrompt(debts, monthlyIncome, progressLogs, method),
+      system: buildSystemPrompt(debts, monthlyIncome, progressLogs, method, activity),
       messages: [...priorTurns, { role: 'user', content: question.trim() }],
     })
 
