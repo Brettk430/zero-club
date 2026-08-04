@@ -1,232 +1,248 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '../lib/supabaseClient.js'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
+import { supabase } from '../lib/supabaseClient.js'
+import { Link } from 'react-router-dom'
+import { GROUPS, groupById, loadGroup, saveGroupLocally } from '../lib/groups.js'
+import { fetchFeed, toggleReaction, addComment, timeAgo, ensureUsername } from '../lib/feed.js'
+import { track } from '../lib/analytics.js'
 
-const cohorts = [
-  { id: 'dff-2026',      label: 'Debt-Free by 2026',      description: 'Final sprint to zero' },
-  { id: 'dff-2027',      label: 'Debt-Free by 2027',      description: 'Three years, one goal' },
-  { id: 'dff-2028',      label: 'Debt-Free by 2028',      description: 'Building momentum' },
-  { id: 'dff-2029',      label: 'Debt-Free by 2029',      description: 'Playing the long game' },
-  { id: 'dff-2030',      label: 'Debt-Free by 2030',      description: 'Five-year mission' },
-  { id: 'student-loans', label: 'Student Loan Crushers',   description: 'Eliminating education debt' },
-  { id: 'credit-cards',  label: 'Credit Card Elimination', description: 'High-interest debt first' },
-  { id: 'under-30',      label: 'Under 30 Debt-Free',     description: 'Young and focused' },
-  { id: 'couples',       label: 'Couples Paying Off Debt', description: 'Two incomes, one mission' },
-]
+// Strava for debt payoff: the feed celebrates every payment and milestone.
+// Positive-only by design — reactions are applause, comments are encouragement.
 
-const JOINED_KEY = 'zc_joined_cohorts'
-const getJoined = () => { try { return JSON.parse(localStorage.getItem(JOINED_KEY) || '[]') } catch { return [] } }
-
-const getOrCreateUsername = () => {
-  const stored = localStorage.getItem('zc_username')
-  if (stored) return stored
-  const adj = ['Quiet', 'Bold', 'Steady', 'Calm', 'Focused', 'Brave', 'Sharp', 'Driven']
-  const ani = ['Falcon', 'Wolf', 'Fox', 'Sparrow', 'Otter', 'Hawk', 'Bear', 'Eagle']
-  const name = `${adj[Math.floor(Math.random() * adj.length)]}${ani[Math.floor(Math.random() * ani.length)]}${Math.floor(Math.random() * 99)}`
-  localStorage.setItem('zc_username', name)
-  return name
+const postText = (post) => {
+  if (post.type === 'payment') {
+    return (
+      <>
+        paid <span className="font-bold text-emerald-600 dark:text-emerald-400">${Number(post.payload.amount).toLocaleString()}</span>
+        {post.payload.debtName ? <> toward {post.payload.debtName}</> : null}
+      </>
+    )
+  }
+  return <>reached <span className="font-bold text-slate-900 dark:text-white">{post.payload.label}</span> 🏆</>
 }
 
-const GroupChat = ({ cohort, user, onBack }) => {
-  const [messages, setMessages] = useState([])
+const ReactionButton = ({ active, emoji, count, onClick, disabled }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition disabled:opacity-40 ${
+      active
+        ? 'bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900'
+        : 'bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+    }`}
+  >
+    <span>{emoji}</span>
+    {count > 0 && <span className="text-xs">{count}</span>}
+  </button>
+)
+
+const PostCard = ({ post, user, onReact, onComment }) => {
+  const [showComments, setShowComments] = useState(false)
   const [draft, setDraft] = useState('')
-  const [connected, setConnected] = useState(false)
   const [sending, setSending] = useState(false)
-  const [sendError, setSendError] = useState('')
-  const [username] = useState(getOrCreateUsername)
-  const bottomRef = useRef(null)
 
-  const supabaseReady = useMemo(
-    () => Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY && supabase), []
-  )
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
-
-  useEffect(() => {
-    if (!supabaseReady) return
-    supabase.from('community_messages').select('*').eq('room', cohort.id)
-      .order('created_at', { ascending: true }).limit(50)
-      .then(({ data }) => data && setMessages(data.map((m) => ({
-        id: m.id, author: m.username, text: m.message,
-        timestamp: new Date(m.created_at), isOwn: m.user_id === user?.id,
-      }))))
-  }, [cohort.id, supabaseReady, user?.id])
-
-  useEffect(() => {
-    if (!supabaseReady) return
-    const ch = supabase.channel(`room-${cohort.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'community_messages', filter: `room=eq.${cohort.id}` }, (p) => {
-        const m = p.new
-        setMessages((prev) => prev.some((x) => x.id === m.id) ? prev : [
-          ...prev, { id: m.id, author: m.username, text: m.message, timestamp: new Date(m.created_at), isOwn: m.user_id === user?.id }
-        ])
-      })
-      .subscribe((s) => setConnected(s === 'SUBSCRIBED'))
-    return () => { supabase.removeChannel(ch) }
-  }, [cohort.id, supabaseReady, user?.id])
-
-  const handleSend = async (e) => {
+  const handleComment = async (e) => {
     e.preventDefault()
     if (!draft.trim() || sending) return
-    if (!user) { setSendError('Sign in to send messages'); return }
-    const text = draft.trim()
-    setDraft('')
-    setSendError('')
     setSending(true)
-    const { error } = await supabase.from('community_messages').insert([{ user_id: user.id, username, message: text, room: cohort.id }])
-    if (error) setSendError(error.message)
+    await onComment(post, draft)
+    setDraft('')
     setSending(false)
   }
 
+  const group = groupById(post.group_id)
+
   return (
-    <div className="flex h-[calc(100vh-9rem)] flex-col rounded-3xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-      {/* Header */}
-      <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
-        <button type="button" onClick={onBack} className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800">
-          <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
-            <path fillRule="evenodd" d="M9.78 4.22a.75.75 0 010 1.06L7.06 8l2.72 2.72a.75.75 0 11-1.06 1.06L5.47 8.53a.75.75 0 010-1.06l3.25-3.25a.75.75 0 011.06 0z" clipRule="evenodd" />
-          </svg>
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-900 truncate dark:text-slate-100">{cohort.label}</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500">as <span className="font-medium text-slate-600 dark:text-slate-300">{username}</span></p>
+    <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 dark:bg-slate-900 dark:ring-slate-800">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white dark:bg-white dark:text-slate-900">
+          {(post.username?.[0] || '?').toUpperCase()}
         </div>
-        {connected && (
-          <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-            Live
-          </span>
-        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <span className="font-semibold text-slate-900 dark:text-white">{post.username}</span>{' '}
+            {postText(post)}
+          </p>
+          <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+            {timeAgo(post.created_at)}
+            {group && <span className="rounded-full bg-slate-50 px-2 py-0.5 dark:bg-slate-800">{group.emoji} {group.name}</span>}
+          </p>
+        </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 px-4 py-4">
-        {messages.length === 0 && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-center text-sm text-slate-400 dark:text-slate-500">No messages yet.<br />Be the first to share a win.</p>
-          </div>
-        )}
-        {messages.map((m) => (
-          <div key={m.id} className={`flex ${m.isOwn ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${m.isOwn ? 'bg-blue-600 text-white' : 'border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800'}`}>
-              {!m.isOwn && <p className="mb-1 text-xs font-semibold text-slate-400 dark:text-slate-500">{m.author}</p>}
-              <p className={`text-sm leading-relaxed ${m.isOwn ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>{m.text}</p>
-              <p className={`mt-1 text-right text-[10px] ${m.isOwn ? 'text-blue-200' : 'text-slate-300 dark:text-slate-600'}`}>
-                {new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: 'numeric' }).format(m.timestamp)}
-              </p>
+      <div className="mt-3 flex items-center gap-2">
+        <ReactionButton emoji="👏" count={post.likes} active={post.myReactions.has('like')} disabled={!user} onClick={() => onReact(post, 'like')} />
+        <ReactionButton emoji="🎉" count={post.celebrates} active={post.myReactions.has('celebrate')} disabled={!user} onClick={() => onReact(post, 'celebrate')} />
+        <button
+          type="button"
+          onClick={() => setShowComments((s) => !s)}
+          className="ml-auto text-xs font-medium text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+        >
+          {post.comments.length > 0 ? `${post.comments.length} comment${post.comments.length === 1 ? '' : 's'}` : 'Comment'}
+        </button>
+      </div>
+
+      {showComments && (
+        <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+          {post.comments.map((c) => (
+            <div key={c.id} className="mb-2 flex items-baseline gap-2 text-sm">
+              <span className="font-semibold text-slate-800 dark:text-slate-200">{c.username}</span>
+              <span className="min-w-0 text-slate-500 dark:text-slate-400">{c.body}</span>
             </div>
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-slate-100 px-4 py-3 dark:border-slate-800">
-        {sendError && <p className="mb-2 text-xs text-red-500">{sendError}</p>}
-        <form className="flex gap-2" onSubmit={handleSend}>
-          <input
-            className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) handleSend(e) }}
-            placeholder="Share a win, ask for support…"
-            disabled={sending}
-          />
-          <button type="submit" disabled={!draft.trim() || sending}
-            className="rounded-full bg-yellow-400 px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-yellow-300 disabled:opacity-40">
-            Send
-          </button>
-        </form>
-      </div>
+          ))}
+          {user ? (
+            <form onSubmit={handleComment} className="mt-2 flex gap-2">
+              <input
+                type="text"
+                value={draft}
+                maxLength={500}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Cheer them on…"
+                className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+              />
+              <button type="submit" disabled={sending || !draft.trim()} className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 dark:bg-white dark:text-slate-900">
+                Send
+              </button>
+            </form>
+          ) : (
+            <p className="mt-1 text-xs text-slate-400">Sign in to comment.</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
 
 const Community = () => {
   const { user } = useAuth()
-  const [joined, setJoined] = useState(getJoined)
-  const [openId, setOpenId] = useState(null)
+  const [myGroup, setMyGroup] = useState(() => loadGroup(user))
+  const [scope, setScope] = useState('all')
+  const [posts, setPosts] = useState([])
+  const [ready, setReady] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const handle = user?.user_metadata?.username || ensureUsername()
 
-  const activeCohort = cohorts.find((c) => c.id === openId)
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    const result = await fetchFeed(scope === 'group' ? myGroup : 'all', user?.id ?? null)
+    setPosts(result.posts)
+    setReady(result.ready)
+    setLoading(false)
+  }, [scope, myGroup, user?.id])
 
-  const toggle = (id) => {
-    const isJoined = joined.includes(id)
-    const updated = isJoined ? joined.filter((j) => j !== id) : [...joined, id]
-    setJoined(updated)
-    localStorage.setItem(JOINED_KEY, JSON.stringify(updated))
-    if (!isJoined) setOpenId(id)
+  useEffect(() => { refresh() }, [refresh])
+
+  const joinGroup = async (id) => {
+    const next = myGroup === id ? '' : id
+    setMyGroup(next)
+    saveGroupLocally(next)
+    if (next) track('group_joined')
+    if (user && supabase) await supabase.auth.updateUser({ data: { zc_group: next || null } })
+    if (scope === 'group' && !next) setScope('all')
   }
 
-  if (activeCohort) {
-    return (
-      <section className="mx-auto max-w-3xl px-4 py-4 sm:px-6 sm:py-8">
-        <GroupChat key={activeCohort.id} cohort={activeCohort} user={user} onBack={() => setOpenId(null)} />
-      </section>
-    )
+  const handleReact = async (post, kind) => {
+    if (!user) return
+    // Optimistic: flip locally, then persist
+    setPosts((prev) => prev.map((p) => {
+      if (p.id !== post.id) return p
+      const mine = new Set(p.myReactions)
+      const had = mine.has(kind)
+      if (had) mine.delete(kind)
+      else mine.add(kind)
+      return {
+        ...p,
+        myReactions: mine,
+        likes: p.likes + (kind === 'like' ? (had ? -1 : 1) : 0),
+        celebrates: p.celebrates + (kind === 'celebrate' ? (had ? -1 : 1) : 0),
+      }
+    }))
+    await toggleReaction(user, post, kind)
+  }
+
+  const handleComment = async (post, body) => {
+    const comment = await addComment(user, post.id, body)
+    if (comment) {
+      setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, comments: [...p.comments, comment] } : p)))
+    }
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-4 py-6 text-slate-900 sm:px-6 sm:py-16 dark:text-slate-100">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 sm:text-3xl">Community</h1>
-      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Join a group, then tap to open its chat.</p>
+    <section className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-12">
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">Community</h1>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Every payment deserves a crowd. Cheer, get cheered, keep going.</p>
+      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+        You post as <span className="font-semibold text-slate-600 dark:text-slate-300">{handle}</span> — balances stay private, only amounts you log are shared.{' '}
+        <Link to="/profile" className="underline decoration-slate-300 underline-offset-2 hover:text-slate-600 dark:hover:text-slate-300">Change handle</Link>
+      </p>
 
-      <div className="mt-6 space-y-2">
-        {cohorts.map((cohort) => {
-          const isJoined = joined.includes(cohort.id)
-          return (
-            <div
-              key={cohort.id}
-              className={`flex items-center gap-4 rounded-2xl border px-5 py-4 transition ${isJoined ? 'border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/20' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'}`}
-            >
-              {/* Text — click to open chat if joined */}
-              <button
-                type="button"
-                onClick={() => isJoined && setOpenId(cohort.id)}
-                disabled={!isJoined}
-                className="min-w-0 flex-1 text-left disabled:cursor-default"
-              >
-                <p className={`font-semibold ${isJoined ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-200'}`}>
-                  {cohort.label}
-                </p>
-                <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{cohort.description}</p>
-              </button>
-
-              {/* Join/leave + open */}
-              <div className="flex shrink-0 items-center gap-2">
-                {isJoined && (
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(cohort.id)}
-                    className="rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
-                  >
-                    Open
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => toggle(cohort.id)}
-                  className={`flex h-7 w-7 items-center justify-center rounded-full transition ${
-                    isJoined
-                      ? 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 dark:bg-slate-800 dark:text-slate-400'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                  aria-label={isJoined ? 'Leave' : 'Join'}
-                >
-                  {isJoined ? (
-                    <svg viewBox="0 0 12 12" fill="currentColor" className="h-3 w-3">
-                      <path d="M3.72 3.72a.75.75 0 011.06 0L8 6.94l3.22-3.22a.75.75 0 111.06 1.06L9.06 8l3.22 3.22a.75.75 0 11-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 01-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 010-1.06z" />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 12 12" fill="currentColor" className="h-3 w-3">
-                      <path d="M6.75 1.75a.75.75 0 00-1.5 0v3.5h-3.5a.75.75 0 000 1.5h3.5v3.5a.75.75 0 001.5 0v-3.5h3.5a.75.75 0 000-1.5h-3.5v-3.5z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-          )
-        })}
+      {/* Groups */}
+      <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+        {GROUPS.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            onClick={() => joinGroup(g.id)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${
+              myGroup === g.id
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700'
+            }`}
+            title={g.description}
+          >
+            {g.emoji} {g.name}{myGroup === g.id ? ' ✓' : ''}
+          </button>
+        ))}
       </div>
+
+      {/* Scope tabs */}
+      <div className="mt-4 flex rounded-full border border-slate-200 bg-white p-0.5 text-sm font-medium dark:border-slate-700 dark:bg-slate-900">
+        {[['all', 'Everyone'], ['group', myGroup ? `${groupById(myGroup)?.emoji ?? ''} My group` : 'My group']].map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            disabled={id === 'group' && !myGroup}
+            onClick={() => setScope(id)}
+            className={`flex-1 rounded-full py-2 transition disabled:opacity-40 ${
+              scope === id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 dark:text-slate-400'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Feed */}
+      <div className="mt-4 space-y-3">
+        {loading ? (
+          <div className="flex h-40 items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900 dark:border-slate-700 dark:border-t-white" />
+          </div>
+        ) : !ready ? (
+          <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
+            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">The feed is warming up.</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Community posts are almost ready — check back shortly.</p>
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
+            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Quiet in here — for now.</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Log a payment and it shows up here automatically. Someone has to be first.
+            </p>
+          </div>
+        ) : (
+          posts.map((post) => (
+            <PostCard key={post.id} post={post} user={user} onReact={handleReact} onComment={handleComment} />
+          ))
+        )}
+      </div>
+
+      {!user && ready && (
+        <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
+          Sign in to react, comment, and share your own wins.
+        </p>
+      )}
     </section>
   )
 }

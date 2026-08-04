@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import { paymentStreakWeeks, todaysMotivation } from '../lib/payments.js'
 import { getNewlyUnlocked } from '../lib/milestones.js'
+import { postMilestone } from '../lib/feed.js'
 import LogPayment from './LogPayment.jsx'
 import Celebration from './Celebration.jsx'
 
@@ -46,6 +48,7 @@ const Stat = ({ label, value, sub, green }) => (
 
 const Dashboard = () => {
   const { debts, plan, payments } = useDebt()
+  const { user } = useAuth()
   const [logging, setLogging] = useState(false)
   const [celebration, setCelebration] = useState(null)
 
@@ -73,7 +76,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (!debts.length) return
     const fresh = getNewlyUnlocked(debts)
-    if (fresh.length) setCelebration(fresh[0])
+    if (fresh.length) {
+      setCelebration(fresh[0])
+      fresh.forEach((m) => postMilestone(user, m)) // share the win with the feed
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debts])
 
   return (

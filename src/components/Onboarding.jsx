@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
+import { GROUPS, saveGroupLocally } from '../lib/groups.js'
 
 const inputCls = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500'
 
@@ -292,12 +293,14 @@ const StepBudget = ({ onNext, onBack }) => {
 const StepPlan = ({ onComplete }) => {
   const { plan, debts } = useDebt()
   const navigate = useNavigate()
+  const [group, setGroup] = useState(() => localStorage.getItem('zc_group') || '')
 
   const totalDebt = debts.reduce((sum, d) => sum + Number(d.balance || 0), 0)
 
   const handleStart = () => {
+    saveGroupLocally(group)
     onComplete()
-    navigate('/plan')
+    navigate('/')
   }
 
   return (
@@ -352,10 +355,29 @@ const StepPlan = ({ onComplete }) => {
         </div>
       </div>
 
+      {/* Nobody does this alone — pick a group before the journey starts */}
+      <p className="mt-6 text-xs font-medium text-slate-500 dark:text-slate-400">Who's walking this with you?</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {GROUPS.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            onClick={() => setGroup((cur) => (cur === g.id ? '' : g.id))}
+            className={`rounded-full px-3.5 py-2 text-sm font-medium transition ${
+              group === g.id
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:ring-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
+            }`}
+          >
+            {g.emoji} {g.name}
+          </button>
+        ))}
+      </div>
+
       <button
         type="button"
         onClick={handleStart}
-        className="mt-6 w-full rounded-full bg-yellow-400 py-4 text-sm font-semibold text-slate-900 transition hover:bg-yellow-300"
+        className="mt-6 w-full rounded-full bg-slate-900 py-4 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
       >
         Start my journey →
       </button>
