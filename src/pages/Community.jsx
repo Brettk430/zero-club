@@ -133,6 +133,13 @@ const Community = () => {
 
   useEffect(() => { refresh() }, [refresh])
 
+  // Identity changed (sign in/out): adopt that member's saved group. Without
+  // this the initial useState value sticks, so a member signing in on a new
+  // device would never pick up the group stored in their metadata.
+  useEffect(() => {
+    setMyGroup(loadGroup(user))
+  }, [user])
+
   const joinGroup = async (id) => {
     const next = myGroup === id ? '' : id
     setMyGroup(next)
