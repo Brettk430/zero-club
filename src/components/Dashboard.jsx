@@ -146,6 +146,48 @@ const Dashboard = () => {
         </Link>
       </div>
 
+      {/* What you actually owe, and the way in to change it */}
+      <div className="mt-4 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
+        <div className="flex items-baseline justify-between">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Your debts</p>
+          <Link to="/calculator" className="text-xs font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 dark:text-white dark:decoration-slate-600">
+            Add or edit
+          </Link>
+        </div>
+        <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
+          {debts.map((d) => {
+            const start = Number(d.startingBalance) || Number(d.balance) || 0
+            const paid = Math.max(0, start - Number(d.balance || 0))
+            const pctDone = start > 0 ? Math.min(100, (paid / start) * 100) : 0
+            const cleared = Number(d.balance) <= 0
+            return (
+              <li key={d.id} className="py-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className={`truncate text-sm font-medium ${cleared ? 'text-slate-500 line-through dark:text-slate-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                    {d.name || 'Unnamed debt'}
+                  </p>
+                  <p className="shrink-0 text-sm font-bold text-slate-900 dark:text-white">
+                    ${Number(d.balance || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${pctDone}%` }} />
+                  </div>
+                  <span className="shrink-0 text-[11px] text-slate-500 dark:text-slate-400">
+                    {d.rate}% · {cleared ? 'cleared 🎉' : `$${paid.toLocaleString()} paid`}
+                  </span>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+        <div className="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+          <p className="text-sm text-slate-500 dark:text-slate-400">Total owed</p>
+          <p className="text-lg font-bold text-slate-900 dark:text-white">${totalCurrent.toLocaleString()}</p>
+        </div>
+      </div>
+
       {/* Safety net — the thing that keeps the plan alive */}
       <div className="mt-4">
         <SafetyNet />

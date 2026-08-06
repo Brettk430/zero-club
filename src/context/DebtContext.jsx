@@ -22,8 +22,22 @@ const loadDebts = () => {
   }
 }
 
+// Repair plans saved before startingBalance stopped locking on the first
+// keystroke. A starting balance can never be lower than what's still owed plus
+// everything already paid against it; if it is, it was captured mid-typing.
+const repairStartingBalances = (debts, payments) =>
+  debts.map((debt) => {
+    const paidAgainst = payments
+      .filter((p) => p.debtId === debt.id)
+      .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+    const floor = (Number(debt.balance) || 0) + paidAgainst
+    return (Number(debt.startingBalance) || 0) < floor
+      ? { ...debt, startingBalance: floor }
+      : debt
+  })
+
 export const DebtProvider = ({ children }) => {
-  const [debts, setDebts] = useState(loadDebts)
+  const [debts, setDebts] = useState(() => repairStartingBalances(loadDebts(), loadPayments()))
   const [monthlyIncome, setMonthlyIncome] = useState(() => window.localStorage.getItem('zero-club-income') || '')
   const [maxMonthlyPayment, setMaxMonthlyPayment] = useState(() => window.localStorage.getItem('zero-club-max-payment') || '')
   const [method, setMethod] = useState(() => window.localStorage.getItem('zero-club-method') || 'avalanche')
@@ -107,9 +121,10 @@ export const DebtProvider = ({ children }) => {
         setMonthlyIncome(cloud.monthlyIncome || '')
         setMaxMonthlyPayment(cloud.maxMonthlyPayment || '')
         setMethod(cloud.method || 'avalanche')
-        setPayments(Array.isArray(cloud.payments) ? cloud.payments : [])
+        const cloudPayments = Array.isArray(cloud.payments) ? cloud.payments : []
+        setPayments(cloudPayments)
         setGoals(Array.isArray(cloud.goals) ? cloud.goals : [])
-        return cloud.debts.map(normalizeDebt)
+        return repairStartingBalances(cloud.debts.map(normalizeDebt), cloudPayments)
       })
     })
     return () => subscription.unsubscribe()
@@ -155,9 +170,11 @@ export const DebtProvider = ({ children }) => {
     setDebts((prev) => prev.map((debt) => {
       if (debt.id !== id) return debt
       const updated = { ...debt, ...updates }
-      // Lock in startingBalance the first time a real balance is entered
-      if (!updated.startingBalance && updated.balance > 0) {
-        updated.startingBalance = updated.balance
+      // While no payments exist for this debt the starting balance simply
+      // follows whatever they type. Locking it on the first keystroke froze
+      // it at "7" while someone entered "7000", so progress read $0 forever.
+      if (updates.balance !== undefined && !payments.some((p) => p.debtId === id)) {
+        updated.startingBalance = Number(updates.balance) || 0
       }
       return updated
     }))
