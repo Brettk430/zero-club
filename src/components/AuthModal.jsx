@@ -5,10 +5,16 @@ const inputCls = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py
 
 // Raw fetch errors ("Failed to fetch") read as broken code rather than a
 // connectivity problem — translate them for humans.
-const friendlyError = (message) =>
-  /fetch|network|load failed/i.test(message || '')
-    ? "Can't reach the server right now. Check your connection and try again in a minute."
-    : message
+const friendlyError = (message) => {
+  if (/fetch|network|load failed/i.test(message || '')) {
+    return "Can't reach the server right now. Check your connection and try again in a minute."
+  }
+  // Provider not switched on in the Supabase dashboard yet
+  if (/provider is not enabled|unsupported provider/i.test(message || '')) {
+    return 'Google sign-in isn’t available yet — use your email and a password for now.'
+  }
+  return message
+}
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">

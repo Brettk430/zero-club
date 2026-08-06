@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { calculatePayoffPlan, comparePlans, normalizeDebt } from '../lib/debtUtils.js'
 import { loadPayments, savePayments, makePayment } from '../lib/payments.js'
 import { loadGoals, saveGoals, makeGoal } from '../lib/savings.js'
+import { clearMemberData, lastUserId, rememberUserId } from '../lib/localData.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { track } from '../lib/analytics.js'
 
@@ -61,28 +62,58 @@ export const DebtProvider = ({ children }) => {
   const [syncUserId, setSyncUserId] = useState(null)
   const lastPushedRef = useRef(null)
 
+  // Wipe this device's copy of a member's plan (state + storage)
+  const resetLocalState = () => {
+    clearMemberData()
+    lastPushedRef.current = null
+    setDebts([])
+    setPayments([])
+    setGoals([])
+    setMonthlyIncome('')
+    setMaxMonthlyPayment('')
+    setMethod('avalanche')
+  }
+
   useEffect(() => {
     if (!supabase) return
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== 'INITIAL_SESSION' && event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return
-      setSyncUserId(session?.user?.id ?? null)
-      if (!session?.user) return
 
-      const cloud = session.user.user_metadata?.zc_data
+      const user = session?.user ?? null
+      setSyncUserId(user?.id ?? null)
+
+      // Signing out must not leave balances on the device for the next person
+      if (!user) {
+        if (event === 'SIGNED_OUT') {
+          resetLocalState()
+          rememberUserId(null)
+        }
+        return
+      }
+
+      // A different member on this browser: drop the previous plan before
+      // adopting theirs, otherwise they inherit it *and* sync it to their account
+      const switchedAccounts = lastUserId() && lastUserId() !== user.id
+      if (switchedAccounts) resetLocalState()
+      rememberUserId(user.id)
+
+      const cloud = user.user_metadata?.zc_data
       if (!cloud) return
       setDebts((local) => {
-        if (local.length || !Array.isArray(cloud.debts) || !cloud.debts.length) return local
+        const localEmpty = switchedAccounts || !local.length
+        if (!localEmpty || !Array.isArray(cloud.debts) || !cloud.debts.length) return local
         // Adopting cloud state wholesale — mark it as already pushed
         lastPushedRef.current = JSON.stringify(cloud)
-        setMonthlyIncome((v) => v || cloud.monthlyIncome || '')
-        setMaxMonthlyPayment((v) => v || cloud.maxMonthlyPayment || '')
-        if (cloud.method) setMethod(cloud.method)
-        if (Array.isArray(cloud.payments)) setPayments((p) => (p.length ? p : cloud.payments))
-        if (Array.isArray(cloud.goals)) setGoals((g) => (g.length ? g : cloud.goals))
+        setMonthlyIncome(cloud.monthlyIncome || '')
+        setMaxMonthlyPayment(cloud.maxMonthlyPayment || '')
+        setMethod(cloud.method || 'avalanche')
+        setPayments(Array.isArray(cloud.payments) ? cloud.payments : [])
+        setGoals(Array.isArray(cloud.goals) ? cloud.goals : [])
         return cloud.debts.map(normalizeDebt)
       })
     })
     return () => subscription.unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
