@@ -24,7 +24,7 @@ const ChecklistItem = ({ done, label, href, cta }) => (
         </svg>
       )}
     </div>
-    <p className={`flex-1 text-sm font-medium ${done ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
+    <p className={`flex-1 text-sm font-medium ${done ? 'text-slate-500 line-through dark:text-slate-400' : 'text-slate-800 dark:text-slate-200'}`}>
       {label}
     </p>
     {!done && href && (
@@ -94,9 +94,9 @@ const Profile = () => {
               <div className="min-w-0">
                 <p className="truncate font-bold text-slate-900 dark:text-slate-100">{displayName}</p>
                 {about.fullName && user?.email && (
-                  <p className="truncate text-xs text-slate-400 dark:text-slate-500">{user.email}</p>
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
                 )}
-                <p className="text-sm text-slate-400 dark:text-slate-500">Community: <span className="font-medium text-slate-600 dark:text-slate-300">{username}</span></p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Community: <span className="font-medium text-slate-600 dark:text-slate-300">{username}</span></p>
               </div>
             </div>
 
@@ -125,11 +125,11 @@ const Profile = () => {
             {/* Stats */}
             <div className="mt-5 grid grid-cols-3 gap-2">
               <div className="rounded-2xl bg-slate-50 p-3 text-center dark:bg-slate-800">
-                <p className="text-xs text-slate-400 dark:text-slate-500">Started</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Started</p>
                 <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">${totalStarting.toLocaleString()}</p>
               </div>
               <div className="rounded-2xl bg-slate-50 p-3 text-center dark:bg-slate-800">
-                <p className="text-xs text-slate-400 dark:text-slate-500">Current</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Current</p>
                 <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">${totalCurrent.toLocaleString()}</p>
               </div>
               <div className="rounded-2xl bg-emerald-50 p-3 text-center dark:bg-emerald-950/30">
@@ -153,7 +153,7 @@ const Profile = () => {
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">Achievements</p>
-              <span className="text-xs text-slate-400 dark:text-slate-500">{unlockedCount} / {achievements.length}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">{unlockedCount} / {achievements.length}</span>
             </div>
             <div className="mt-4 grid grid-cols-4 gap-2">
               {achievements.map((a) => (

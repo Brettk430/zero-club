@@ -21,17 +21,17 @@ const Ring = ({ pct }) => {
   return (
     <div className="relative h-40 w-40 shrink-0">
       <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90">
-        <circle cx="64" cy="64" r={r} fill="none" strokeWidth="10" className="stroke-slate-100 dark:stroke-slate-800" />
+        <circle cx="64" cy="64" r={r} fill="none" strokeWidth="10" className="stroke-slate-200 dark:stroke-slate-700" />
         <circle
           cx="64" cy="64" r={r} fill="none" strokeWidth="10" strokeLinecap="round"
-          className="stroke-emerald-500 transition-all duration-1000"
+          className="stroke-emerald-600 dark:stroke-emerald-500 transition-all duration-1000"
           strokeDasharray={`${circ} ${circ}`}
           strokeDashoffset={circ - (Math.min(pct, 100) / 100) * circ}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <p className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.round(pct)}%</p>
-        <p className="text-[11px] font-medium uppercase tracking-widest text-slate-400">paid off</p>
+        <p className="text-[11px] font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">paid off</p>
       </div>
     </div>
   )
@@ -39,11 +39,11 @@ const Ring = ({ pct }) => {
 
 const Stat = ({ label, value, sub, green }) => (
   <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5 dark:bg-slate-900 dark:ring-slate-800">
-    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</p>
+    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</p>
     <p className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${green ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
       {value}
     </p>
-    {sub && <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
+    {sub && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{sub}</p>}
   </div>
 )
 
@@ -94,7 +94,7 @@ const Dashboard = () => {
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-10">
           <Ring pct={pct} />
           <div className="text-center sm:text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">You've paid off</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">You've paid off</p>
             <p className="mt-2 text-5xl font-bold tracking-tight text-emerald-600 sm:text-6xl dark:text-emerald-400">
               ${paidOff.toLocaleString()}
             </p>
@@ -138,8 +138,8 @@ const Dashboard = () => {
       {/* Upcoming payment */}
       <div className="mt-4 flex items-center justify-between rounded-2xl bg-white px-6 py-4 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Upcoming payment</p>
-          <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">${plan.monthlyPayment.toLocaleString()}<span className="ml-1.5 text-xs font-normal text-slate-400">/ month</span></p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Upcoming payment</p>
+          <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">${plan.monthlyPayment.toLocaleString()}<span className="ml-1.5 text-xs font-normal text-slate-500 dark:text-slate-400">/ month</span></p>
         </div>
         <Link to="/plan" className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
           View plan →
@@ -154,7 +154,7 @@ const Dashboard = () => {
       {/* Recent activity */}
       {recent.length > 0 && (
         <div className="mt-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Recent payments</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Recent payments</p>
           <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
             {recent.map((p) => (
               <li key={p.id} className="flex items-center justify-between py-3">
@@ -164,10 +164,10 @@ const Dashboard = () => {
                   </span>
                   <div>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{p.debtName}</p>
-                    <p className="text-xs text-slate-400">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{new Date(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                   </div>
                 </div>
-                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">−${Number(p.amount).toLocaleString()}</p>
+                <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">−${Number(p.amount).toLocaleString()}</p>
               </li>
             ))}
           </ul>

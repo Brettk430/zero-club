@@ -20,7 +20,7 @@ const MortgageDetails = ({ debt, updateDebt }) => {
 
   return (
     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 dark:border-slate-700 dark:bg-slate-800">
-      <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Mortgage details</p>
+      <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Mortgage details</p>
       <div className="flex flex-wrap items-end gap-4">
         <label className="block text-sm text-slate-600 dark:text-slate-400">
           Home value
@@ -45,23 +45,23 @@ const MortgageDetails = ({ debt, updateDebt }) => {
         {ltv !== null && (
           <>
             <div className="text-sm">
-              <p className="text-slate-400 dark:text-slate-500">Current LTV</p>
+              <p className="text-slate-500 dark:text-slate-400">Current LTV</p>
               <p className={`mt-0.5 font-semibold ${pmiActive ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`}>
                 {Math.round(ltv * 100)}%
-                <span className="ml-1.5 font-normal text-slate-400 dark:text-slate-500">
+                <span className="ml-1.5 font-normal text-slate-500 dark:text-slate-400">
                   {pmiActive ? '— PMI active' : '— PMI-free'}
                 </span>
               </p>
             </div>
             {pmiActive && (
               <div className="text-sm">
-                <p className="text-slate-400 dark:text-slate-500">Monthly PMI</p>
+                <p className="text-slate-500 dark:text-slate-400">Monthly PMI</p>
                 <p className="mt-0.5 font-semibold text-amber-600 dark:text-amber-400">~${monthlyPmi}/mo</p>
               </div>
             )}
             {pmiActive && (
               <div className="text-sm">
-                <p className="text-slate-400 dark:text-slate-500">To PMI-free</p>
+                <p className="text-slate-500 dark:text-slate-400">To PMI-free</p>
                 <p className="mt-0.5 font-semibold text-slate-700 dark:text-slate-300">
                   ${Math.round(debt.balance - debt.homeValue * 0.8).toLocaleString()} to go
                 </p>
@@ -146,14 +146,14 @@ const ViewCard = ({ debt, removeDebt, onEdit }) => {
           {debt.name || <span className="italic text-slate-400">Unnamed debt</span>}
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 sm:gap-x-4 sm:text-base dark:text-slate-400">
-          <span><span className="text-slate-400 dark:text-slate-500">Balance</span> ${Number(debt.balance).toLocaleString()}</span>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
-          <span><span className="text-slate-400 dark:text-slate-500">APR</span> {debt.rate}%</span>
-          <span className="text-slate-300 dark:text-slate-600">·</span>
-          <span><span className="text-slate-400 dark:text-slate-500">Payment</span> ${debt.minPayment}/mo</span>
+          <span><span className="text-slate-500 dark:text-slate-400">Balance</span> ${Number(debt.balance).toLocaleString()}</span>
+          <span className="text-slate-500 dark:text-slate-400">·</span>
+          <span><span className="text-slate-500 dark:text-slate-400">APR</span> {debt.rate}%</span>
+          <span className="text-slate-500 dark:text-slate-400">·</span>
+          <span><span className="text-slate-500 dark:text-slate-400">Payment</span> ${debt.minPayment}/mo</span>
           {ltv !== null && (
             <>
-              <span className="text-slate-300 dark:text-slate-600">·</span>
+              <span className="text-slate-500 dark:text-slate-400">·</span>
               <span className={pmiActive ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}>
                 LTV {Math.round(ltv * 100)}%{pmiActive ? ' — PMI' : ''}
               </span>
@@ -309,7 +309,7 @@ const Calculator = () => {
                   Max monthly toward debt
                 </label>
                 {pctOfIncome !== null && (
-                  <span className="text-sm text-slate-400 dark:text-slate-500">{pctOfIncome}% of income</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">{pctOfIncome}% of income</span>
                 )}
               </div>
               <input
@@ -328,7 +328,7 @@ const Calculator = () => {
                   ${(maxPayment - totalMin).toLocaleString()}/mo extra goes avalanche-first to your highest-rate debt.
                 </p>
               ) : (
-                <p className="mt-2 text-sm text-slate-400 dark:text-slate-500">
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                   Set a limit and we'll maximize your payoff within it.
                 </p>
               )}

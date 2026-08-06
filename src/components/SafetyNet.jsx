@@ -75,7 +75,7 @@ const SafetyNet = () => {
       {adding && <AddMoney goal={adding} onClose={() => setAdding(null)} />}
 
       <div className="flex items-baseline justify-between">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Safety net</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Safety net</p>
         {protectedNow && (
           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
             Protected
@@ -102,9 +102,9 @@ const SafetyNet = () => {
             <div className="flex items-baseline justify-between">
               <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 ${Number(buffer.saved).toLocaleString()}
-                <span className="ml-1 text-sm font-medium text-slate-400">of ${Number(buffer.target).toLocaleString()}</span>
+                <span className="ml-1 text-sm font-medium text-slate-500 dark:text-slate-400">of ${Number(buffer.target).toLocaleString()}</span>
               </p>
-              <p className="text-xs text-slate-400">{Math.round(goalProgress(buffer))}%</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{Math.round(goalProgress(buffer))}%</p>
             </div>
             <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
               <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${goalProgress(buffer)}%` }} />
@@ -131,7 +131,7 @@ const SafetyNet = () => {
             <div key={g.id} className="mb-3">
               <div className="flex items-baseline justify-between">
                 <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{g.name}</p>
-                <p className="text-xs text-slate-400">${Number(g.saved).toLocaleString()} / ${Number(g.target).toLocaleString()}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">${Number(g.saved).toLocaleString()} / ${Number(g.target).toLocaleString()}</p>
               </div>
               <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                 <div className="h-full rounded-full bg-emerald-400" style={{ width: `${goalProgress(g)}%` }} />
@@ -170,7 +170,7 @@ const SafetyNet = () => {
               </div>
             </form>
           ) : (
-            <button onClick={() => setShowNew(true)} className="text-xs font-medium text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300">
+            <button onClick={() => setShowNew(true)} className="text-xs font-medium text-slate-500 dark:text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300">
               + Another goal
             </button>
           )}

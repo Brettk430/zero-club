@@ -12,8 +12,8 @@ import {
 
 const Card = ({ title, sub, children }) => (
   <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-8 dark:bg-slate-900 dark:ring-slate-800">
-    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">{title}</p>
-    {sub && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
+    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">{title}</p>
+    {sub && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{sub}</p>}
     {children}
   </div>
 )
@@ -62,7 +62,7 @@ const BalanceChart = ({ payments, totalCurrent, plan }) => {
         {futureLine && <path d={futureLine} fill="none" strokeWidth="2" strokeDasharray="5 5" className="stroke-slate-300 dark:stroke-slate-600" />}
         <circle cx={x(past.length - 1)} cy={y(past[past.length - 1])} r="5" className="fill-emerald-500 stroke-white stroke-2 dark:stroke-slate-900" />
       </svg>
-      <div className="mt-1 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+      <div className="mt-1 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
         <span>6 months ago</span>
         <span className="flex items-center gap-3">
           <span className="flex items-center gap-1"><span className="inline-block h-0.5 w-4 rounded bg-emerald-500" /> actual</span>
@@ -147,7 +147,7 @@ const MonthlyBars = ({ payments, target }) => {
       </div>
       <div className="mt-2 flex gap-3">
         {months.map((m) => (
-          <p key={m.key} className="flex-1 text-center text-xs text-slate-400 dark:text-slate-500">{m.label}</p>
+          <p key={m.key} className="flex-1 text-center text-xs text-slate-500 dark:text-slate-400">{m.label}</p>
         ))}
       </div>
     </div>

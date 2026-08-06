@@ -64,7 +64,7 @@ const PostCard = ({ post, user, onReact, onComment }) => {
             <span className="font-semibold text-slate-900 dark:text-white">{post.username}</span>{' '}
             {postText(post)}
           </p>
-          <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+          <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             {timeAgo(post.created_at)}
             {group && <span className="rounded-full bg-slate-50 px-2 py-0.5 dark:bg-slate-800">{group.emoji} {group.name}</span>}
           </p>
@@ -179,7 +179,7 @@ const Community = () => {
     <section className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-12">
       <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">Community</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Every payment deserves a crowd. Cheer, get cheered, keep going.</p>
-      <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
         You post as <span className="font-semibold text-slate-600 dark:text-slate-300">{handle}</span> — balances stay private, only amounts you log are shared.{' '}
         <Link to="/profile" className="underline decoration-slate-300 underline-offset-2 hover:text-slate-600 dark:hover:text-slate-300">Change handle</Link>
       </p>
@@ -246,7 +246,7 @@ const Community = () => {
       </div>
 
       {!user && ready && (
-        <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
+        <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
           Sign in to react, comment, and share your own wins.
         </p>
       )}

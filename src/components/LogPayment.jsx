@@ -62,7 +62,7 @@ const LogPayment = ({ onClose }) => {
 
             <form onSubmit={handleLog} className="mt-5 space-y-4">
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Which debt?</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Which debt?</p>
                 <div className="space-y-2">
                   {active.map((d) => (
                     <button
@@ -76,14 +76,14 @@ const LogPayment = ({ onClose }) => {
                       }`}
                     >
                       <span className="font-medium text-slate-800 dark:text-slate-200">{d.name || 'Unnamed'}</span>
-                      <span className="text-sm text-slate-400 dark:text-slate-500">${Number(d.balance).toLocaleString()}</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">${Number(d.balance).toLocaleString()}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Amount</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Amount</p>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-slate-400">$</span>
                   <input
@@ -97,7 +97,7 @@ const LogPayment = ({ onClose }) => {
                   />
                 </div>
                 {planned && (
-                  <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                     Your plan calls for ${planned.total.toLocaleString()} here this month.
                   </p>
                 )}

@@ -196,7 +196,7 @@ const Coach = () => {
                       : 'bg-blue-600 text-white dark:bg-blue-700'
                   }`}
                 >
-                  <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${message.role === 'assistant' ? 'text-slate-400 dark:text-slate-500' : 'text-blue-200'}`}>
+                  <p className={`text-xs font-semibold uppercase tracking-[0.24em] ${message.role === 'assistant' ? 'text-slate-500 dark:text-slate-400' : 'text-blue-200'}`}>
                     {message.role === 'assistant' ? 'Miles' : 'You'}
                   </p>
                   <p className="mt-2 whitespace-pre-wrap text-sm sm:text-base">

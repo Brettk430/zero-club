@@ -40,7 +40,7 @@ const CheckinHistory = ({ history }) => {
   if (!history?.length) return null
   return (
     <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Past check-ins</p>
+      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Past check-ins</p>
       <div className="space-y-2">
         {history.map((entry) => {
           const total = entry.debt_balances?.reduce((s, d) => s + d.actualBalance, 0) ?? 0
@@ -54,7 +54,7 @@ const CheckinHistory = ({ history }) => {
                   {diff >= 0 ? '+' : '-'}${Math.abs(diff).toLocaleString()} vs plan
                 </span>
                 {entry.win && (
-                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500 max-w-[200px] text-right truncate" title={entry.win}>
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 max-w-[200px] text-right truncate" title={entry.win}>
                     Win: {entry.win}
                   </p>
                 )}
@@ -149,7 +149,7 @@ const MonthlyCheckin = ({ debts }) => {
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-400">
               {currentMonth} — checked in
             </p>
-            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Miles has your latest progress</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Miles has your latest progress</p>
           </div>
           <button
             onClick={() => setAlreadyLoggedThisMonth(false)}
@@ -201,7 +201,7 @@ const MonthlyCheckin = ({ debts }) => {
     // Step 0: Accountability questions
     <div key="q">
       <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-600 dark:text-blue-400">Monthly Check-In</p>
-      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{currentMonth}</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{currentMonth}</p>
 
       <div className="mt-5 space-y-5">
         <div>
@@ -267,7 +267,7 @@ const MonthlyCheckin = ({ debts }) => {
         </button>
         <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-600 dark:text-blue-400">Update your balances</p>
       </div>
-      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Enter your actual balances today</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Enter your actual balances today</p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         {debts.map((debt) => (

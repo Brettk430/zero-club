@@ -125,7 +125,7 @@ const StepDebts = ({ onNext }) => {
             <div key={debt.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-200">{debt.name}</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   ${Number(debt.balance).toLocaleString()} · {debt.rate}% APR · ${debt.minPayment}/mo
                 </p>
               </div>

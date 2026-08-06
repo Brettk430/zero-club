@@ -123,7 +123,7 @@ const CommitmentCard = ({ commitment, onCheckIn, onDelete }) => {
           </div>
         )}
         {total > 0 && (
-          <span className="text-xs text-slate-400 dark:text-slate-500">{keptCount}/{total} kept</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{keptCount}/{total} kept</span>
         )}
       </div>
 
@@ -306,7 +306,7 @@ const Commitments = () => {
                 A commitment is a specific promise — not a vague goal. The more specific it is, the easier it is to keep.
               </p>
               <div className="mt-4 space-y-2 text-left rounded-2xl bg-white p-4 dark:bg-slate-900">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">Examples</p>
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Examples</p>
                 {['Pay $1,500/month toward my Visa', 'No restaurant spending over $150', 'Make one extra payment this month', 'Cancel two subscriptions this week'].map((ex) => (
                   <button key={ex} type="button" onClick={() => setDraft(ex)} className="block w-full rounded-xl bg-slate-50 px-3 py-2 text-left text-xs text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-400">
                     {ex}

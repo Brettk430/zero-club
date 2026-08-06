@@ -22,7 +22,7 @@ const FoundingMember = () => {
         <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-lg dark:bg-emerald-950/40">🌱</span>
         <div>
           <p className="font-bold text-slate-900 dark:text-white">Founding member</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500">Free while we build</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Free while we build</p>
         </div>
       </div>
 
@@ -42,7 +42,7 @@ const FoundingMember = () => {
         ))}
       </ul>
 
-      <p className="mt-4 text-xs leading-5 text-slate-400 dark:text-slate-500">
+      <p className="mt-4 text-xs leading-5 text-slate-500 dark:text-slate-400">
         If we ever add a paid tier, founding members keep what they have.
         {user?.email ? ` Signed in as ${user.email}.` : ''}
       </p>

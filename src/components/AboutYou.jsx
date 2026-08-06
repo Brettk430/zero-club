@@ -50,7 +50,7 @@ const AboutYou = () => {
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
       <p className="text-sm font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">About you</p>
-      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
         Your username is what the community sees. Your name and birthday stay private — we just like to celebrate with you.
       </p>
 

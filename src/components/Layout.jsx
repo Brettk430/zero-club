@@ -119,10 +119,10 @@ const BottomNav = () => {
                 to={item.path}
                 className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 transition-colors"
               >
-                <span className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md transition-all ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white dark:bg-blue-600'}`}>
+                <span className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md transition-all ${isActive ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'}`}>
                   {item.icon}
                 </span>
-                <span className={`text-[10px] font-bold ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                <span className={`text-[10px] font-bold ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
                   {item.name}
                 </span>
               </NavLink>
@@ -136,10 +136,10 @@ const BottomNav = () => {
               end={item.path === '/'}
               className="flex flex-1 flex-col items-center gap-0.5 px-1 py-2.5 transition-colors"
             >
-              <span className={isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}>
+              <span className={isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}>
                 {item.icon}
               </span>
-              <span className={`text-[10px] font-medium ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}>
+              <span className={`text-[10px] font-medium ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
                 {item.name}
               </span>
             </NavLink>
@@ -168,7 +168,7 @@ const Layout = () => {
             <Logo size={32} />
             <div>
               <p className="text-sm font-bold uppercase leading-none tracking-[0.12em] text-slate-900 dark:text-slate-100" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Zero Club</p>
-              <p className="mt-1 hidden text-xs text-slate-400 sm:block dark:text-slate-500">Debt Payoff · Community · Freedom</p>
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-300">Debt Payoff · Community · Freedom</p>
             </div>
           </Link>
 
