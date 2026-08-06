@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useDebt } from '../context/DebtContext.jsx'
 import { computeAchievements } from '../lib/milestones.js'
@@ -8,6 +8,7 @@ import AboutYou from '../components/AboutYou.jsx'
 import Referral from '../components/Referral.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
 import { isBirthdayToday, loadAboutYou } from '../lib/aboutYou.js'
+import { resetTour } from '../lib/localData.js'
 
 const memberStatus = (pct) => {
   if (pct >= 100) return { label: 'Zero Club Member', color: 'bg-yellow-400 text-slate-900', dot: 'bg-yellow-400' }
@@ -40,6 +41,7 @@ const Profile = () => {
   const { user, isPro } = useAuth()
   const { debts, monthlyIncome, maxMonthlyPayment, plan, payments, goals } = useDebt()
 
+  const navigate = useNavigate()
   const about = loadAboutYou(user)
   const username = about.username || '—'
   const displayName = about.fullName || user?.email
@@ -217,6 +219,14 @@ const Profile = () => {
 
           <Referral />
           {user && <FoundingMember />}
+
+          <button
+            onClick={() => { resetTour(); navigate('/') }}
+            className="text-xs font-medium text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-slate-700 dark:text-slate-400 dark:decoration-slate-600 dark:hover:text-slate-200"
+          >
+            Replay the walkthrough
+          </button>
+
           {user && <DeleteAccount />}
         </div>
       </div>

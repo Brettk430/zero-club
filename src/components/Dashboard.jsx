@@ -8,6 +8,8 @@ import { postMilestone } from '../lib/feed.js'
 import LogPayment from './LogPayment.jsx'
 import Celebration from './Celebration.jsx'
 import SafetyNet from './SafetyNet.jsx'
+import WelcomeTour from './WelcomeTour.jsx'
+import { hasSeenTour } from '../lib/localData.js'
 
 // Member home screen — every element answers one question:
 // "Am I closer to debt-free than yesterday?"
@@ -51,6 +53,8 @@ const Dashboard = () => {
   const { debts, plan, payments } = useDebt()
   const { user } = useAuth()
   const [logging, setLogging] = useState(false)
+  // First landing after onboarding — teach the loop, once
+  const [touring, setTouring] = useState(() => !hasSeenTour())
   const [searchParams, setSearchParams] = useSearchParams()
 
   // The nav's centre button routes here with ?log=1 to open the payment sheet
@@ -94,6 +98,7 @@ const Dashboard = () => {
 
   return (
     <section className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-12">
+      {touring && <WelcomeTour onClose={() => setTouring(false)} />}
       {celebration && <Celebration milestone={celebration} onDone={() => setCelebration(null)} />}
       {logging && <LogPayment onClose={() => setLogging(false)} />}
 

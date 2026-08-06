@@ -26,7 +26,29 @@ const MEMBER_KEYS = [
   'zc_checked_in',
   'zc_asked_miles',
   'zc_visit_days',
+  // Cleared too: a new member on a shared device should get the walkthrough.
+  // A returning member re-seeing a four-card, one-tap-skippable tour is the
+  // cheaper mistake.
+  'zc_toured',
 ]
+
+const TOUR_KEY = 'zc_toured'
+
+export const hasSeenTour = () => {
+  try {
+    return Boolean(window.localStorage.getItem(TOUR_KEY))
+  } catch {
+    return true // storage blocked — don't nag
+  }
+}
+
+export const markTourSeen = () => {
+  try { window.localStorage.setItem(TOUR_KEY, '1') } catch { /* ignore */ }
+}
+
+export const resetTour = () => {
+  try { window.localStorage.removeItem(TOUR_KEY) } catch { /* ignore */ }
+}
 
 const LAST_USER_KEY = 'zc_last_user'
 
