@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { paymentStreakWeeks, todaysMotivation } from '../lib/payments.js'
@@ -51,6 +51,14 @@ const Dashboard = () => {
   const { debts, plan, payments } = useDebt()
   const { user } = useAuth()
   const [logging, setLogging] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // The nav's centre button routes here with ?log=1 to open the payment sheet
+  useEffect(() => {
+    if (searchParams.get('log') !== '1') return
+    setSearchParams({}, { replace: true })
+    setLogging(true)
+  }, [searchParams, setSearchParams])
   const [celebration, setCelebration] = useState(null)
 
   const totalStarting = useMemo(() =>

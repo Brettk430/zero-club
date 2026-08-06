@@ -14,8 +14,8 @@ import { recordVisit } from './lib/payments.js'
 const Coach = lazy(() => import('./pages/Coach.jsx'))
 const Community = lazy(() => import('./pages/Community.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
-const Commitments = lazy(() => import('./pages/Commitments.jsx'))
 const Progress = lazy(() => import('./pages/Progress.jsx'))
+const Privacy = lazy(() => import('./pages/Privacy.jsx'))
 
 const PageSpinner = () => (
   <div className="flex h-64 items-center justify-center">
@@ -67,7 +67,7 @@ function AppContent() {
             <Route path="coach" element={<Coach />} />
             <Route path="community" element={<Community />} />
             <Route path="profile" element={<Profile />} />
-            <Route path="commitments" element={<Commitments />} />
+            <Route path="privacy" element={<Privacy />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

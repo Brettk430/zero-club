@@ -6,6 +6,7 @@ import { computeAchievements } from '../lib/milestones.js'
 import FoundingMember from '../components/FoundingMember.jsx'
 import AboutYou from '../components/AboutYou.jsx'
 import Referral from '../components/Referral.jsx'
+import DeleteAccount from '../components/DeleteAccount.jsx'
 import { isBirthdayToday, loadAboutYou } from '../lib/aboutYou.js'
 
 const memberStatus = (pct) => {
@@ -37,13 +38,12 @@ const ChecklistItem = ({ done, label, href, cta }) => (
 
 const Profile = () => {
   const { user, isPro } = useAuth()
-  const { debts, monthlyIncome, maxMonthlyPayment, plan } = useDebt()
+  const { debts, monthlyIncome, maxMonthlyPayment, plan, payments, goals } = useDebt()
 
   const about = loadAboutYou(user)
   const username = about.username || '—'
   const displayName = about.fullName || user?.email
   const birthdayToday = isBirthdayToday(about.birthday)
-  const hasCheckin = Boolean(localStorage.getItem('zc_checked_in'))
 
   const totalStarting = useMemo(() =>
     debts.reduce((sum, d) => sum + (Number(d.startingBalance) || Number(d.balance) || 0), 0), [debts])
@@ -60,8 +60,8 @@ const Profile = () => {
     { label: 'Create your account',        done: Boolean(user),                    href: null },
     { label: 'Enter your debts',           done: debts.length > 0,                 href: '/calculator', cta: 'Add debts' },
     { label: 'Set your monthly budget',    done: Boolean(monthlyIncome || maxMonthlyPayment), href: '/calculator', cta: 'Set budget' },
-    { label: 'Make your first commitment',  done: Boolean(localStorage.getItem('zc_commitments') && JSON.parse(localStorage.getItem('zc_commitments') || '[]').length > 0), href: '/commitments', cta: 'Make one' },
-    { label: 'Log your first check-in',    done: hasCheckin,                       href: '/plan', cta: 'Go to Journey' },
+    { label: 'Log your first payment',     done: payments.length > 0,              href: '/?log=1', cta: 'Log one' },
+    { label: 'Start a safety net',         done: goals.length > 0,                 href: '/', cta: 'Start it' },
     { label: 'Ask Miles a question',       done: Boolean(localStorage.getItem('zc_asked_miles')), href: '/coach', cta: 'Talk to Miles' },
   ]
 
@@ -217,6 +217,7 @@ const Profile = () => {
 
           <Referral />
           {user && <FoundingMember />}
+          {user && <DeleteAccount />}
         </div>
       </div>
     </section>

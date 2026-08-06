@@ -12,14 +12,16 @@ const navItems = [
     icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>),
   },
   {
-    name: 'Journey',
-    path: '/plan',
+    name: 'Progress',
+    path: '/progress',
     icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>),
   },
   {
-    name: 'Commit',
-    path: '/commitments',
-    icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>),
+    // The record button, Strava-style: the app's primary action lives in the
+    // centre of the nav. /?log=1 tells the dashboard to open the payment sheet.
+    name: 'Log',
+    path: '/?log=1',
+    icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>),
   },
   {
     name: 'Coach',
@@ -109,8 +111,8 @@ const BottomNav = () => {
         {navItems.map((item) => {
           const isActive = item.path === '/'
             ? location.pathname === '/'
-            : location.pathname.startsWith(item.path)
-          const isFeatured = item.path === '/commitments'
+            : item.path.startsWith('/?') ? false : location.pathname.startsWith(item.path)
+          const isFeatured = item.path.startsWith('/?log')
 
           if (isFeatured) {
             return (
@@ -176,20 +178,14 @@ const Layout = () => {
             {/* Desktop nav — hidden on mobile */}
             <nav className="hidden gap-1 md:flex">
               {navItems.map((item) => (
-                item.path === '/commitments'
+                item.path.startsWith('/?log')
                   ? (
                     <NavLink
                       key={item.path}
                       to={item.path}
-                      className={({ isActive }) =>
-                        `rounded-full px-4 py-2 text-sm font-bold transition ${
-                          isActive
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'bg-slate-900 text-white hover:bg-slate-700 dark:bg-blue-600 dark:hover:bg-blue-500'
-                        }`
-                      }
+                      className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                     >
-                      {item.name}
+                      + Log payment
                     </NavLink>
                   )
                   : (
@@ -200,7 +196,7 @@ const Layout = () => {
                       className={({ isActive }) =>
                         `rounded-full px-4 py-2 text-sm font-medium transition ${
                           isActive
-                            ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400'
+                            ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                         }`
                       }
@@ -240,6 +236,16 @@ const Layout = () => {
       <main className="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         <Outlet />
       </main>
+
+      <footer className="mx-auto max-w-6xl px-6 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-8 md:pb-8">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-200 pt-6 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          <span>© {new Date().getFullYear()} Zero Club</span>
+          <Link to="/privacy" className="underline decoration-slate-300 underline-offset-4 transition hover:text-slate-700 dark:decoration-slate-600 dark:hover:text-slate-200">
+            Privacy
+          </Link>
+          <span className="hidden sm:inline">Not financial advice — your plan, your call.</span>
+        </div>
+      </footer>
 
       <BottomNav />
     </div>

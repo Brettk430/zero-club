@@ -11,54 +11,54 @@ const demoMembers = [
 const steps = [
   {
     n: '1',
-    title: 'Make a commitment',
-    body: 'Write down exactly what you\'ll do each month — a payment amount, a spending limit, an extra contribution.',
-    color: 'bg-blue-600 text-white',
+    title: 'Add what you owe',
+    body: 'Balances, rates, minimums. We rank them and show you the date you go free.',
+    color: 'bg-slate-900 text-white dark:bg-white dark:text-slate-900',
   },
   {
     n: '2',
-    title: 'Check in monthly',
-    body: 'Answer four quick questions at the end of every month. Did you keep your commitment? What helped? What didn\'t?',
-    color: 'bg-violet-600 text-white',
+    title: 'Log every payment',
+    body: 'Two taps when you pay. The balance drops, the ring moves, and the number you owe gets smaller in front of you.',
+    color: 'bg-slate-900 text-white dark:bg-white dark:text-slate-900',
   },
   {
     n: '3',
     title: 'Build your streak',
-    body: 'Consecutive months of follow-through compound. The streak becomes the motivation to keep going.',
-    color: 'bg-amber-500 text-white',
+    body: 'Consecutive weeks with a payment compound. The streak becomes the reason you keep going.',
+    color: 'bg-slate-900 text-white dark:bg-white dark:text-slate-900',
   },
   {
     n: '4',
     title: 'Reach zero',
-    body: 'Debt freedom isn\'t a sprint. It\'s showing up every month. Zero is just the math — we\'re here for the habit.',
+    body: 'Debt freedom isn\'t a sprint. It\'s showing up, month after month — and not doing it alone.',
     color: 'bg-emerald-600 text-white',
   },
 ]
 
 const features = [
   {
-    title: 'Monthly Commitments',
-    body: 'Set a specific pledge each month — a payment target, a spending limit, an extra push. The app holds you to it.',
-    href: '/commitments',
-    cta: 'Set a commitment',
-    accent: 'text-blue-600 dark:text-blue-400',
-    bg: 'bg-blue-50 dark:bg-blue-950/50',
+    title: 'Every payment, celebrated',
+    body: 'Log a payment and watch the ring move. Milestones fire confetti, streaks build, and your progress becomes something you can actually see.',
+    href: '/calculator',
+    cta: 'Build your plan',
+    accent: 'text-emerald-700 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/40',
   },
   {
-    title: 'AI Accountability Coach',
-    body: 'Miles isn\'t a calculator. Miles is a behavior coach — reminding you of your goals, calling out spending leaks, and getting you back on track after a tough month.',
+    title: 'A coach who knows your numbers',
+    body: 'Miles isn\'t a calculator. Ask "can I afford this?" and get an answer in your own numbers — no shame, no lectures, just the honest picture.',
     href: '/coach',
     cta: 'Talk to Miles',
-    accent: 'text-violet-600 dark:text-violet-400',
-    bg: 'bg-violet-50 dark:bg-violet-950/50',
+    accent: 'text-slate-900 dark:text-white',
+    bg: 'bg-slate-100 dark:bg-slate-800',
   },
   {
-    title: 'Accountability Community',
-    body: 'Find a small group paying off the same kind of debt. 5–10 people who get it — not a public feed, a real circle.',
+    title: 'People doing the same thing',
+    body: 'A feed where every payment gets applause. Join a group — student loans, under 30, medical debt — and go at it together, under a handle, never your real name.',
     href: '/community',
-    cta: 'Find your circle',
-    accent: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    cta: 'See the feed',
+    accent: 'text-slate-900 dark:text-white',
+    bg: 'bg-slate-100 dark:bg-slate-800',
   },
 ]
 
@@ -145,7 +145,7 @@ const Home = () => {
             </div>
             <div className="p-6 sm:p-8">
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">Zero keeps<br />you consistent.</p>
-              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">Commitments. Monthly check-ins. Streaks. A coach who knows your plan. A community that holds you accountable.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">Payment logging. Streaks. Milestones. A coach who knows your numbers. A community that cheers every payment.</p>
             </div>
           </div>
         </div>
@@ -205,7 +205,7 @@ const Home = () => {
                 <span className="text-4xl font-bold text-slate-900 dark:text-slate-100">$0</span>
               </div>
               <ul className="mt-6 flex-1 space-y-2.5 text-sm text-slate-600 dark:text-slate-400">
-                {['Avalanche debt calculator', 'Journey scoreboard', 'Monthly commitments', 'Basic streaks', 'Milestone achievements'].map((item) => (
+                {['Payoff calculator & strategy', 'Payment logging', 'Progress charts & streaks', 'Milestone celebrations', 'Community feed'].map((item) => (
                   <li key={item} className="flex items-center gap-2.5">
                     <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4 shrink-0 text-blue-500"><path fillRule="evenodd" d="M12.416 3.376a.75.75 0 01.208 1.04l-5 7.5a.75.75 0 01-1.154.114l-3-3a.75.75 0 011.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 011.04-.207z" clipRule="evenodd" /></svg>
                     {item}
