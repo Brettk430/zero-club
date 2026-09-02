@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useDebt } from '../context/DebtContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { postPayment } from '../lib/feed.js'
+import AuthModal from './AuthModal.jsx'
 
 // The Strava "record activity" moment. Logging a payment should feel like a
 // win, not a chore: pre-filled amounts, one tap, instant celebration.
@@ -14,17 +15,26 @@ const LogPayment = ({ onClose }) => {
   const [debtId, setDebtId] = useState(target?.id ?? active[0]?.id)
   const [amount, setAmount] = useState(() => String(target?.total || active[0]?.minPayment || ''))
   const [done, setDone] = useState(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   const selected = active.find((d) => d.id === debtId)
   const planned = plan.monthlyAllocation?.find((a) => a.id === debtId)
 
   const handleLog = (e) => {
     e.preventDefault()
+    if (!user) {
+      setShowAuthModal(true)
+      return
+    }
     const payment = logPayment(debtId, amount)
     if (payment) {
       setDone(payment)
       postPayment(user, payment) // fire-and-forget: the feed celebrates with you
     }
+  }
+
+  if (showAuthModal) {
+    return <AuthModal onClose={() => { setShowAuthModal(false); setDone(null) }} />
   }
 
   return (

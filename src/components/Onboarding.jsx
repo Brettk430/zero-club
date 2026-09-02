@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
 import { GROUPS, saveGroupLocally } from '../lib/groups.js'
+import AuthModal from './AuthModal.jsx'
 
 const inputCls = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500'
 
@@ -292,15 +294,25 @@ const StepBudget = ({ onNext, onBack }) => {
 
 const StepPlan = ({ onComplete }) => {
   const { plan, debts } = useDebt()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [group, setGroup] = useState(() => localStorage.getItem('zc_group') || '')
+  const [showAuthModal, setShowAuthModal] = useState(false)
 
   const totalDebt = debts.reduce((sum, d) => sum + Number(d.balance || 0), 0)
 
   const handleStart = () => {
+    if (!user) {
+      setShowAuthModal(true)
+      return
+    }
     saveGroupLocally(group)
     onComplete()
     navigate('/')
+  }
+
+  if (showAuthModal) {
+    return <AuthModal onClose={() => setShowAuthModal(false)} />
   }
 
   return (
@@ -379,7 +391,7 @@ const StepPlan = ({ onComplete }) => {
         onClick={handleStart}
         className="mt-6 w-full rounded-full bg-slate-900 py-4 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
       >
-        Start my journey →
+        Create account & save my plan →
       </button>
     </div>
   )
