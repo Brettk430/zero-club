@@ -53,8 +53,8 @@ const Dashboard = () => {
   const { debts, plan, payments } = useDebt()
   const { user } = useAuth()
   const [logging, setLogging] = useState(false)
-  // First landing after onboarding — teach the loop, once
-  const [touring, setTouring] = useState(() => !hasSeenTour())
+  // Tour disabled by default — reduced cognitive load on first login
+  const [touring, setTouring] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
 
   // The nav's centre button routes here with ?log=1 to open the payment sheet
@@ -112,9 +112,8 @@ const Dashboard = () => {
               ${paidOff.toLocaleString()}
             </p>
             {nextMilestone > paidOff && (
-              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                Next milestone: <span className="font-semibold text-slate-900 dark:text-white">${nextMilestone.toLocaleString()}</span>
-                {' '}— ${Math.max(0, Math.round(nextMilestone - paidOff)).toLocaleString()} to go
+              <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                ${Math.max(0, Math.round(nextMilestone - paidOff)).toLocaleString()} until your next milestone
               </p>
             )}
           </div>
@@ -142,7 +141,7 @@ const Dashboard = () => {
 
       {/* Stats */}
       <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4">
-        <Stat label="Payment streak" value={streak > 0 ? `${streak} week${streak === 1 ? '' : 's'}` : 'Start today'} sub={streak > 0 ? 'Keep it alive' : 'Log your first payment'} green={streak > 0} />
+        <Stat label="Payment streak" value={streak > 0 ? `🔥 ${streak}w` : '—'} sub={streak > 0 ? 'Streak going' : 'Log to start'} green={streak > 0} />
         <Stat label="Days until debt free" value={daysUntilFree != null ? daysUntilFree.toLocaleString() : '—'} sub={plan.payoffDate || undefined} />
         <Stat label="Current balance" value={`$${totalCurrent.toLocaleString()}`} />
         <Stat label="Remaining interest" value={plan.paymentTooLow ? '—' : `$${plan.totalInterest.toLocaleString()}`} sub={plan.paymentTooLow ? 'Raise your payment' : 'If you follow the plan'} />

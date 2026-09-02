@@ -86,14 +86,13 @@ const SafetyNet = () => {
       {!buffer ? (
         <>
           <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Most payoff plans don't fail on the math — they fail when a car repair lands and the only option is a credit card.
-            A small buffer keeps one bad week from undoing months of work.
+            A small emergency buffer stops surprises from derailing your progress. Build it at your own pace while you pay down debt.
           </p>
           <button
             onClick={startBuffer}
             className="mt-4 w-full rounded-full bg-slate-900 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
           >
-            Start a ${STARTER_BUFFER.toLocaleString()} buffer
+            Build a ${STARTER_BUFFER.toLocaleString()} buffer
           </button>
         </>
       ) : (
@@ -111,8 +110,8 @@ const SafetyNet = () => {
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
               {protectedNow
-                ? 'Buffer funded. Now every spare dollar goes at the debt — and a surprise bill no longer sets you back.'
-                : `$${Math.max(0, buffer.target - buffer.saved).toLocaleString()} to go. Worth pausing extra debt payments until this is full.`}
+                ? 'Protected. You can focus on debt payoff without worry.'
+                : `$${Math.max(0, buffer.target - buffer.saved).toLocaleString()} more to go. Add at your pace.`}
             </p>
           </div>
           <button
