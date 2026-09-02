@@ -123,7 +123,7 @@ const Dashboard = () => {
           onClick={() => setLogging(true)}
           className="mt-8 w-full rounded-full bg-slate-900 py-4 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
         >
-          Commit →
+          + Log payment
         </button>
         <Link
           to="/progress"

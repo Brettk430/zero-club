@@ -185,7 +185,7 @@ const Layout = () => {
                       to={item.path}
                       className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                     >
-                      + Log payment
+                      Commit
                     </NavLink>
                   )
                   : (
