@@ -1,23 +1,25 @@
 import { useState } from 'react'
 import { useZero } from '../context/ZeroContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
-import { money, progressPct as pctOf } from '../lib/zero.js'
+import { money, progressPct as pctOf, earnedMilestones } from '../lib/zero.js'
 import { shareProgress } from '../lib/shareCard.js'
-import { postElimination } from '../lib/feed.js'
+import { postElimination, postZeroMilestone } from '../lib/feed.js'
 import AuthModal from './AuthModal.jsx'
+import MilestoneCelebration from './MilestoneCelebration.jsx'
 
 // Log, watch the number drop, then be handed something worth posting.
 
 const QUICK = [100, 250, 500, 1000]
 
 const LogPaymentSheet = ({ onClose }) => {
-  const { currentDebt, startingDebt, logPayment, handle } = useZero()
+  const { currentDebt, startingDebt, logPayment, handle, showAmounts } = useZero()
   const { user } = useAuth()
   const [amount, setAmount] = useState('')
   const [done, setDone] = useState(null)
   const [sharing, setSharing] = useState(false)
   const [shareNote, setShareNote] = useState('')
   const [needsAuth, setNeedsAuth] = useState(false)
+  const [crossed, setCrossed] = useState(null)
 
   const digits = amount.replace(/[^0-9]/g, '')
   const value = Number(digits) || 0
@@ -26,10 +28,27 @@ const LogPaymentSheet = ({ onClose }) => {
   const submit = async (e) => {
     e.preventDefault()
     if (!user) { setNeedsAuth(true); return }
+    // Derived from this payment rather than a stored "already celebrated" list:
+    // you can only cross a milestone by paying, so there is nothing to remember
+    // and nothing to misfire on a later sign-in.
+    const before = new Set(earnedMilestones(startingDebt, currentDebt).map((m) => m.id))
     const result = await logPayment(value)
     if (!result) return
+    const justEarned = earnedMilestones(startingDebt, result.remaining).filter((m) => !before.has(m.id))
+
     setDone(result)
-    postElimination(user, handle, { amount: result.amount, remaining: result.remaining })
+    if (justEarned.length) {
+      // The biggest one earned is the one worth the moment
+      const top = justEarned[justEarned.length - 1]
+      setCrossed(top)
+      postZeroMilestone(user, handle, top)
+    }
+    postElimination(user, handle, {
+      amount: result.amount,
+      remaining: result.remaining,
+      progressPct: pctOf(startingDebt, result.remaining),
+      showAmounts,
+    })
   }
 
   const share = async () => {
@@ -46,6 +65,18 @@ const LogPaymentSheet = ({ onClose }) => {
   }
 
   if (needsAuth) return <AuthModal onClose={() => setNeedsAuth(false)} />
+
+  // A milestone replaces the ordinary success screen rather than stacking on
+  // top of it — one moment, one prompt to share.
+  if (crossed && done) {
+    return (
+      <MilestoneCelebration
+        milestone={crossed}
+        stats={{ amount: done.amount, remaining: done.remaining, starting: startingDebt, progressPct: pctOf(startingDebt, done.remaining) }}
+        onClose={onClose}
+      />
+    )
+  }
 
   return (
     <div

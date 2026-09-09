@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
 import { myClubs, createClub, joinClub, leaveClub, clubStandings, clubTotals } from '../lib/clubs.js'
@@ -22,6 +22,7 @@ const Standings = ({ club, meId, onLeave }) => {
   const [ready, setReady] = useState(true)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [board, setBoard] = useState('progress') // 'progress' | 'month'
 
   useEffect(() => {
     let cancelled = false
@@ -33,6 +34,16 @@ const Standings = ({ club, meId, onLeave }) => {
   }, [club.id])
 
   const totals = clubTotals(rows)
+
+  // Both boards rank on something you did, never on what you owe. Sorting by
+  // balance would put the person with the most debt last for having the most
+  // debt, which is the opposite of the point.
+  const ranked = useMemo(() => {
+    const copy = [...rows]
+    if (board === 'month') copy.sort((a, b) => (b.monthPaid ?? -1) - (a.monthPaid ?? -1))
+    else copy.sort((a, b) => b.progressPct - a.progressPct)
+    return copy
+  }, [rows, board])
 
   const invite = async () => {
     const text = `Join my Zero Club: ${club.name}\n\nCode: ${club.invite_code}\n${window.location.origin}/clubs?code=${club.invite_code}`
@@ -83,9 +94,24 @@ const Standings = ({ club, meId, onLeave }) => {
 
       {rows.length > 0 && (
         <div className="mt-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 dark:bg-slate-900 dark:ring-slate-800">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Progress to zero</p>
+          <div className="flex rounded-full border border-slate-200 bg-slate-50 p-0.5 text-xs font-bold dark:border-slate-700 dark:bg-slate-800">
+            {[['progress', 'Most progress'], ['month', 'This month']].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setBoard(id)}
+                className={`flex-1 rounded-full py-2 transition ${
+                  board === id
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                    : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <ol className="mt-4 space-y-4">
-            {rows.map((r, i) => {
+            {ranked.map((r, i) => {
               const me = r.userId === meId
               return (
                 <li key={r.userId}>
@@ -95,14 +121,18 @@ const Standings = ({ club, meId, onLeave }) => {
                       {r.displayName || r.handle}{me && ' (you)'}
                     </p>
                     <p className="shrink-0 text-sm font-black tabular-nums text-slate-900 dark:text-white">
-                      {r.progressPct.toFixed(1)}%
+                      {board === 'month'
+                        ? (r.monthPaid === null ? '—' : money(r.monthPaid))
+                        : `${r.progressPct.toFixed(1)}%`}
                     </p>
                   </div>
                   <div className="mt-1.5"><Bar pct={r.progressPct} highlight={me} /></div>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {r.eliminated === null
-                      ? 'Amounts private'
-                      : <>{money(r.eliminated)} eliminated{r.monthPaid > 0 && <> · {money(r.monthPaid)} this month</>}</>}
+                      ? `Amounts private · ${r.progressPct.toFixed(1)}% to zero`
+                      : board === 'month'
+                        ? <>{r.progressPct.toFixed(1)}% to zero overall</>
+                        : <>{money(r.eliminated)} eliminated{r.monthPaid > 0 && <> · {money(r.monthPaid)} this month</>}</>}
                   </p>
                 </li>
               )

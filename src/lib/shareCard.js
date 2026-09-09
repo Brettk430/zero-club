@@ -7,6 +7,19 @@ const H = 1920
 
 const money = (n) => `$${Math.round(Number(n) || 0).toLocaleString()}`
 
+// Milestone labels vary a lot in length — "ZERO" against "$10,000 Eliminated"
+// — so the headline is measured and stepped down until it fits rather than
+// trusting one hard-coded size.
+const fitText = (ctx, text, maxWidth, startPx, weight = 900) => {
+  let size = startPx
+  do {
+    ctx.font = `${weight} ${size}px system-ui, -apple-system, sans-serif`
+    if (ctx.measureText(text).width <= maxWidth) break
+    size -= 6
+  } while (size > 40)
+  return size
+}
+
 const roundRect = (ctx, x, y, w, h, r) => {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
@@ -17,7 +30,7 @@ const roundRect = (ctx, x, y, w, h, r) => {
   ctx.closePath()
 }
 
-export const renderShareCard = ({ amount, remaining, starting, progressPct }) => {
+export const renderShareCard = ({ amount, remaining, starting, progressPct, milestoneLabel }) => {
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
@@ -41,12 +54,21 @@ export const renderShareCard = ({ amount, remaining, starting, progressPct }) =>
   ctx.fillStyle = '#64748b'
   ctx.font = '700 34px system-ui, -apple-system, sans-serif'
   ctx.letterSpacing = '10px'
-  ctx.fillText('JUST ELIMINATED', W / 2, 620)
+  ctx.fillText(milestoneLabel ? 'MILESTONE' : 'JUST ELIMINATED', W / 2, 620)
 
   ctx.letterSpacing = '0px'
   ctx.fillStyle = '#34d399'
-  ctx.font = '900 190px system-ui, -apple-system, sans-serif'
-  ctx.fillText(money(amount), W / 2, 790)
+  // A milestone is the headline when there is one; the payment that got you
+  // there is the smaller story.
+  if (milestoneLabel) {
+    const label = milestoneLabel.toUpperCase()
+    fitText(ctx, label, W - 120, 130)
+    ctx.fillText(label, W / 2, 780)
+  } else {
+    const value = money(amount)
+    fitText(ctx, value, W - 120, 190)
+    ctx.fillText(value, W / 2, 790)
+  }
 
   ctx.fillStyle = '#ffffff'
   ctx.font = '800 62px system-ui, -apple-system, sans-serif'
@@ -86,8 +108,10 @@ export const renderShareCard = ({ amount, remaining, starting, progressPct }) =>
   return canvas
 }
 
-export const shareText = ({ amount, remaining, progressPct }) =>
-  `I just eliminated ${money(amount)} of debt.\n\n${money(remaining)} → $0\n${progressPct.toFixed(1)}% closer to ZERO.\n\n#ZeroClub`
+export const shareText = ({ amount, remaining, progressPct, milestoneLabel }) =>
+  milestoneLabel
+    ? `${milestoneLabel}. 🎉\n\n${money(remaining)} → $0\n${progressPct.toFixed(1)}% of the way to ZERO.\n\n#ZeroClub`
+    : `I just eliminated ${money(amount)} of debt.\n\n${money(remaining)} → $0\n${progressPct.toFixed(1)}% closer to ZERO.\n\n#ZeroClub`
 
 const toBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
 
