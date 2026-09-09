@@ -66,6 +66,11 @@ export const ZeroProvider = ({ children }) => {
   // Someone arriving cold — an invite link, a shared card — should meet the
   // pitch before a form. Signed-in members without a number skip straight to it.
   const [onboardingRequested, setOnboardingRequested] = useState(false)
+  const [onboardingLatched, setOnboardingLatched] = useState(false)
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false)
+  // Whether we yet know what this account holds. Onboarding must not ask until
+  // the answer is in, or a returning member gets asked during the round trip.
+  const [profileResolved, setProfileResolved] = useState(false)
 
   // Set once the backing tables answer. Until the migration is run the app is
   // simply local-only rather than broken.
@@ -73,8 +78,12 @@ export const ZeroProvider = ({ children }) => {
   const cloudReadyRef = useRef(false)
   cloudReadyRef.current = cloudReady
 
-  useEffect(() => { write(KEYS.starting, startingDebt || '') }, [startingDebt])
-  useEffect(() => { write(KEYS.current, currentDebt || '') }, [currentDebt])
+  // Only ever persist a real number. `write` removes the key for a falsy value,
+  // so any momentary zero — a slow profile fetch, a failed round trip — would
+  // delete the member's journey from this device with no way to get it back.
+  // Nothing legitimately sets these to zero: a reset writes the new figure.
+  useEffect(() => { if (startingDebt > 0) write(KEYS.starting, startingDebt) }, [startingDebt])
+  useEffect(() => { if (startingDebt > 0) write(KEYS.current, currentDebt) }, [currentDebt, startingDebt])
   useEffect(() => { write(KEYS.goal, goalDate) }, [goalDate])
   useEffect(() => { write(KEYS.handle, handle) }, [handle])
   useEffect(() => { write(KEYS.showAmounts, showAmounts) }, [showAmounts])
@@ -84,49 +93,85 @@ export const ZeroProvider = ({ children }) => {
 
   // ── Pull ────────────────────────────────────────────────────────────────
   // Signed in, the account is the truth: it is what club standings read, and
-  // it is the only copy that survives reinstalling or switching devices.
+  // the only copy that survives a reinstall, a new phone, or the home-screen
+  // app (which gets its own storage container and so always starts empty).
   useEffect(() => {
-    if (!supabase || !user) { setCloudReady(false); return }
+    if (!supabase || !user) {
+      setCloudReady(false)
+      setProfileResolved(true) // signed out, this device is the only answer there is
+      return
+    }
     let cancelled = false
+    setSyncing(true)
+    setProfileResolved(false)
 
     const pull = async () => {
-      setSyncing(true)
       const { data: profile, error } = await supabase
         .from('profiles').select('*').eq('id', user.id).maybeSingle()
-
       if (cancelled) return
-      if (error) { setCloudReady(false); setSyncing(false); return } // tables not there yet
+
+      if (error) {
+        // Tables aren't there yet. Local is all there is, and that is a settled
+        // answer — not a reason to keep asking.
+        setCloudReady(false); setSyncing(false); setProfileResolved(true)
+        return
+      }
       setCloudReady(true)
 
-      if (profile) {
-        setStartingDebt(Number(profile.starting_debt) || 0)
+      const localStarting = Number(read(KEYS.starting)) || 0
+      const cloudStarting = Number(profile?.starting_debt) || 0
+
+      if (profile && cloudStarting > 0) {
+        setStartingDebt(cloudStarting)
         setCurrentDebt(Number(profile.current_debt) || 0)
         setGoalDate(profile.goal_date || '')
         setHandle(profile.handle)
         setShowAmounts(profile.show_amounts !== false)
+      } else if (profile) {
+        // The row exists but carries no number — the state a first sign-in
+        // leaves behind. Adopting its zero would wipe the number this device
+        // already has and send the member back through onboarding, forever.
+        // The device's answer wins, and gets published.
+        setHandle(profile.handle)
+        setShowAmounts(profile.show_amounts !== false)
+        if (localStarting > 0) {
+          await supabase.from('profiles').update({
+            starting_debt: localStarting,
+            current_debt: Number(read(KEYS.current)) || localStarting,
+            goal_date: read(KEYS.goal) || null,
+          }).eq('id', user.id)
+        }
       } else {
-        // First sign-in on the new model: publish what this device knows.
         await supabase.from('profiles').insert({
           id: user.id,
           handle: read(KEYS.handle) || randomHandle(),
-          starting_debt: Number(read(KEYS.starting)) || 0,
-          current_debt: Number(read(KEYS.current)) || 0,
+          starting_debt: localStarting,
+          current_debt: Number(read(KEYS.current)) || localStarting,
           goal_date: read(KEYS.goal) || null,
         })
       }
 
-      const { data: rows } = await supabase
-        .from('payments').select('*').eq('user_id', user.id)
-        .order('created_at', { ascending: true }).limit(500)
-      if (!cancelled && rows) {
-        setPayments(rows.map((r) => ({ id: r.id, amount: Number(r.amount), note: r.note, date: r.created_at })))
+      // Payments follow the same rule: only an account that actually holds a
+      // journey gets to replace what this device has.
+      if (cloudStarting > 0) {
+        const { data: rows } = await supabase
+          .from('payments').select('*').eq('user_id', user.id)
+          .order('created_at', { ascending: true }).limit(500)
+        if (!cancelled && rows) {
+          setPayments(rows.map((r) => ({ id: r.id, amount: Number(r.amount), note: r.note, date: r.created_at })))
+        }
       }
-      if (!cancelled) setSyncing(false)
+
+      if (!cancelled) { setSyncing(false); setProfileResolved(true) }
     }
 
     pull()
     return () => { cancelled = true }
-  }, [user])
+    // Keyed on the id, not the user object: Supabase hands back a fresh object
+    // on every token refresh and metadata write, and re-running the whole pull
+    // on each one is what made the number appear to reset in normal use.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const pushProfile = useCallback(async (patch) => {
     if (!supabase || !user || !cloudReadyRef.current) return
@@ -213,11 +258,21 @@ export const ZeroProvider = ({ children }) => {
   }, [pushProfile])
 
   const hasZero = startingDebt > 0
-  const onboardingOpen = !hasZero && (onboardingRequested || Boolean(user))
+
+  // Latched deliberately. Onboarding saves the number at the end of step two so
+  // it survives the OAuth redirect, which immediately makes `needsOnboarding`
+  // false — without the latch the flow would tear itself down one screen early
+  // and swallow the welcome. Only finishing it closes it.
+  const needsOnboarding = !hasZero && profileResolved && (onboardingRequested || Boolean(user))
+  const onboardingOpen = onboardingLatched && !onboardingDismissed
+
+  useEffect(() => {
+    if (needsOnboarding) setOnboardingLatched(true)
+  }, [needsOnboarding])
 
   const value = {
     startingDebt, currentDebt, goalDate, payments, handle, showAmounts,
-    hasZero, cloudReady, syncing,
+    hasZero, cloudReady, syncing, profileResolved,
     onboardingOpen,
     openOnboarding: () => setOnboardingRequested(true),
     closeOnboarding: () => setOnboardingRequested(false),

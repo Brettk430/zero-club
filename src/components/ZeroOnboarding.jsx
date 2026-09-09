@@ -152,8 +152,16 @@ const ZeroOnboarding = ({ onComplete }) => {
 
   const total = Number(amount.replace(/[^0-9]/g, '')) || 0
 
-  const finish = async () => {
+  // Persisted the moment it's given, before any sign-in. Google's OAuth is a
+  // full-page redirect: anything still living in React state when it fires is
+  // gone by the time the member lands back here, which meant answering both
+  // questions, signing in, and being asked for the number all over again.
+  const commitAnswers = async () => {
     await setZero({ total, goal })
+    setStep(2)
+  }
+
+  const finish = () => {
     onComplete()
     navigate('/')
   }
@@ -182,7 +190,7 @@ const ZeroOnboarding = ({ onComplete }) => {
         <div className="flex flex-1 items-center justify-center py-10">
           <div className="w-full max-w-sm">
             {step === 0 && <StepAmount value={amount} onChange={setAmount} onNext={() => setStep(1)} />}
-            {step === 1 && <StepDate total={total} value={goal} onChange={setGoal} onNext={() => setStep(2)} onBack={() => setStep(0)} />}
+            {step === 1 && <StepDate total={total} value={goal} onChange={setGoal} onNext={commitAnswers} onBack={() => setStep(0)} />}
             {step === 2 && <StepWelcome total={total} onFinish={handleFinish} />}
           </div>
         </div>
