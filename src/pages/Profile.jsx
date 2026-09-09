@@ -62,11 +62,19 @@ const Profile = () => {
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">Zero profile</p>
         <h1 className="mt-1.5 text-3xl font-black tracking-tight">{handle}</h1>
 
+        {/* What's left, and the distance already covered behind it. Leading with
+            the starting figure named a number the member had already beaten and
+            never moved as they paid down. */}
         <div className="mt-7 flex items-baseline gap-3">
-          <span className="text-2xl font-black tracking-tight text-slate-500">{money(startingDebt)}</span>
+          <span className="text-2xl font-black tracking-tight text-white">{money(currentDebt)}</span>
           <span className="text-slate-600">→</span>
-          <span className="text-2xl font-black tracking-tight text-white">$0</span>
+          <span className="text-2xl font-black tracking-tight text-slate-500">$0</span>
         </div>
+        {eliminated > 0 && (
+          <p className="mt-1.5 text-sm text-slate-400">
+            Started at {money(startingDebt)} — <span className="font-bold text-emerald-400">{money(eliminated)} gone</span>
+          </p>
+        )}
 
         <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800">
           <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-1000" style={{ width: `${Math.max(progressPct > 0 ? 2 : 0, progressPct)}%` }} />
