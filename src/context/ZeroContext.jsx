@@ -39,6 +39,14 @@ const migrateFromDebts = () => {
   return { starting: Math.max(starting, current), current }
 }
 
+// Nobody has eliminated a negative amount. A device can still be holding the
+// half-state an earlier build could produce — a current balance with no
+// starting figure — so the pair is reconciled before it is trusted or sent.
+const reconcile = (starting, current) => ({
+  starting: Math.max(Number(starting) || 0, Number(current) || 0),
+  current: Number(current) || 0,
+})
+
 const randomHandle = () => {
   const a = ['Steady', 'Calm', 'Bold', 'Relentless', 'Quiet', 'Bright', 'Swift', 'Iron']
   const b = ['Falcon', 'Otter', 'Hawk', 'Wolf', 'Heron', 'Eagle', 'Fox', 'Crane']
@@ -50,7 +58,7 @@ export const ZeroProvider = ({ children }) => {
 
   const [startingDebt, setStartingDebt] = useState(() => {
     const stored = read(KEYS.starting)
-    if (stored) return Number(stored)
+    if (stored) return reconcile(stored, read(KEYS.current)).starting
     return migrateFromDebts()?.starting ?? 0
   })
   const [currentDebt, setCurrentDebt] = useState(() => {
@@ -122,8 +130,13 @@ export const ZeroProvider = ({ children }) => {
       const cloudStarting = Number(profile?.starting_debt) || 0
 
       if (profile && cloudStarting > 0) {
-        setStartingDebt(cloudStarting)
-        setCurrentDebt(Number(profile.current_debt) || 0)
+        const fixed = reconcile(cloudStarting, profile.current_debt)
+        setStartingDebt(fixed.starting)
+        setCurrentDebt(fixed.current)
+        // A stored row that says otherwise is repaired rather than mirrored
+        if (fixed.starting !== cloudStarting) {
+          await supabase.from('profiles').update({ starting_debt: fixed.starting }).eq('id', user.id)
+        }
         setGoalDate(profile.goal_date || '')
         setHandle(profile.handle)
         setShowAmounts(profile.show_amounts !== false)
@@ -135,18 +148,20 @@ export const ZeroProvider = ({ children }) => {
         setHandle(profile.handle)
         setShowAmounts(profile.show_amounts !== false)
         if (localStarting > 0) {
+          const fixed = reconcile(localStarting, Number(read(KEYS.current)) || localStarting)
           await supabase.from('profiles').update({
-            starting_debt: localStarting,
-            current_debt: Number(read(KEYS.current)) || localStarting,
+            starting_debt: fixed.starting,
+            current_debt: fixed.current,
             goal_date: read(KEYS.goal) || null,
           }).eq('id', user.id)
         }
       } else {
+        const fixed = reconcile(localStarting, Number(read(KEYS.current)) || localStarting)
         await supabase.from('profiles').insert({
           id: user.id,
           handle: read(KEYS.handle) || randomHandle(),
-          starting_debt: localStarting,
-          current_debt: Number(read(KEYS.current)) || localStarting,
+          starting_debt: fixed.starting,
+          current_debt: fixed.current,
           goal_date: read(KEYS.goal) || null,
         })
       }
