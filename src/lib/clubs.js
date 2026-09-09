@@ -2,7 +2,17 @@ import { supabase } from './supabaseClient.js'
 
 // Every call tolerates the tables not existing yet: before the migration runs,
 // clubs simply report as unavailable instead of taking the app down.
-const missing = (error) => !!error && /relation|does not exist|schema cache/i.test(error.message || '')
+const missingTable = (error) => !!error && /relation .* does not exist/i.test(error.message || '')
+// PGRST202 is specifically "that function isn't there" — a migration that has
+// not been run, not a feature that is switched off. Saying the same thing for
+// both sent us looking in the wrong place.
+const missingFunction = (error) => error?.code === 'PGRST202'
+
+const notReady = (error) => missingFunction(error)
+  ? 'Clubs need a database update that has not been applied yet.'
+  : missingTable(error)
+    ? 'Clubs are not switched on yet.'
+    : null
 
 export const myClubs = async (userId) => {
   if (!supabase || !userId) return { clubs: [], ready: false }
@@ -11,7 +21,7 @@ export const myClubs = async (userId) => {
     .select('role, joined_at, clubs(id, name, invite_code, created_by)')
     .eq('user_id', userId)
 
-  if (error) return { clubs: [], ready: !missing(error) }
+  if (error) return { clubs: [], ready: !notReady(error) }
   return {
     ready: true,
     clubs: (data || []).filter((r) => r.clubs).map((r) => ({ ...r.clubs, role: r.role, joinedAt: r.joined_at })),
@@ -24,9 +34,7 @@ export const myClubs = async (userId) => {
 export const createClub = async (userId, name) => {
   if (!supabase || !userId) return { error: 'Not signed in' }
   const { data, error } = await supabase.rpc('create_club', { club_name: name.trim() })
-  if (error) {
-    return { error: missing(error) ? 'Clubs are not switched on yet.' : error.message }
-  }
+  if (error) return { error: notReady(error) ?? error.message }
   return { club: Array.isArray(data) ? data[0] : data }
 }
 
@@ -35,7 +43,7 @@ export const createClub = async (userId, name) => {
 export const joinClub = async (code) => {
   if (!supabase) return { error: 'Not available' }
   const { data, error } = await supabase.rpc('join_club', { code })
-  if (error) return { error: missing(error) ? 'Clubs are not switched on yet.' : error.message }
+  if (error) return { error: notReady(error) ?? error.message }
   if (!data) return { error: "That code doesn't match a club." }
   return { clubId: data }
 }
@@ -48,7 +56,7 @@ export const leaveClub = async (clubId, userId) => {
 export const clubStandings = async (clubId) => {
   if (!supabase || !clubId) return { rows: [], ready: false }
   const { data, error } = await supabase.rpc('club_standings', { club: clubId })
-  if (error) return { rows: [], ready: !missing(error) }
+  if (error) return { rows: [], ready: !notReady(error) }
   return {
     ready: true,
     rows: (data || []).map((r) => ({
