@@ -65,6 +65,9 @@ create policy "Members remove their own avatar"
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- Standings carry the avatar so a club reads as faces, not initials.
+-- Dropped first: create-or-replace cannot change a function's output columns,
+-- and this adds one.
+drop function if exists public.club_standings(uuid);
 create or replace function public.club_standings(club uuid)
 returns table (
   user_id        uuid,
@@ -201,7 +204,10 @@ begin
 end;
 $$;
 
--- create_club learns about visibility.
+-- create_club learns about visibility. The single-argument version is dropped
+-- rather than replaced: a new parameter list defines an overload, so both would
+-- survive and PostgREST would have two candidates to choose between.
+drop function if exists public.create_club(text);
 create or replace function public.create_club(club_name text, public_club boolean default false)
 returns public.clubs
 language plpgsql
