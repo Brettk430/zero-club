@@ -1,234 +1,180 @@
-import { useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { useDebt } from '../context/DebtContext.jsx'
-import { computeAchievements } from '../lib/milestones.js'
-import FoundingMember from '../components/FoundingMember.jsx'
-import AboutYou from '../components/AboutYou.jsx'
+import { useZero } from '../context/ZeroContext.jsx'
+import { myClubs } from '../lib/clubs.js'
+import { earnedMilestones, MILESTONES, money, monthLabel } from '../lib/zero.js'
 import Referral from '../components/Referral.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
-import { isBirthdayToday, loadAboutYou } from '../lib/aboutYou.js'
-import { resetTour } from '../lib/localData.js'
 
-const memberStatus = (pct) => {
-  if (pct >= 100) return { label: 'Zero Club Member', color: 'bg-yellow-400 text-slate-900', dot: 'bg-yellow-400' }
-  if (pct >= 50)  return { label: 'Final Stretch',    color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300', dot: 'bg-violet-500' }
-  if (pct >= 25)  return { label: 'In Progress',      color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300', dot: 'bg-blue-500' }
-  return            { label: 'Road to Zero',          color: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300', dot: 'bg-slate-400' }
-}
-
-const ChecklistItem = ({ done, label, href, cta }) => (
-  <div className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-800/50">
-    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${done ? 'bg-blue-600' : 'border-2 border-slate-300 dark:border-slate-600'}`}>
-      {done && (
-        <svg viewBox="0 0 12 12" fill="currentColor" className="h-3 w-3 text-white">
-          <path d="M10.28 2.28L4 8.56 1.72 6.28A1 1 0 00.28 7.72l3 3a1 1 0 001.44 0l7-7a1 1 0 00-1.44-1.44z" />
-        </svg>
-      )}
-    </div>
-    <p className={`flex-1 text-sm font-medium ${done ? 'text-slate-500 line-through dark:text-slate-400' : 'text-slate-800 dark:text-slate-200'}`}>
-      {label}
-    </p>
-    {!done && href && (
-      <Link to={href} className="shrink-0 rounded-full bg-yellow-400 px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-yellow-300">
-        {cta}
-      </Link>
-    )}
-  </div>
-)
+// The Zero profile: one journey, stated plainly, with the badges to show for it.
 
 const Profile = () => {
-  const { user, isPro } = useAuth()
-  const { debts, monthlyIncome, maxMonthlyPayment, plan, payments, goals } = useDebt()
+  const { user, signOut } = useAuth()
+  const {
+    startingDebt, currentDebt, goalDate, eliminated, progressPct,
+    streakMonths, handle, showAmounts, updateIdentity, adjustTotal,
+  } = useZero()
 
-  const navigate = useNavigate()
-  const about = loadAboutYou(user)
-  const username = about.username || '—'
-  const displayName = about.fullName || user?.email
-  const birthdayToday = isBirthdayToday(about.birthday)
+  const [clubs, setClubs] = useState([])
+  const [editing, setEditing] = useState(false)
+  const [draftHandle, setDraftHandle] = useState(handle)
+  const [draftTotal, setDraftTotal] = useState('')
+  const [saved, setSaved] = useState(false)
 
-  const totalStarting = useMemo(() =>
-    debts.reduce((sum, d) => sum + (Number(d.startingBalance) || Number(d.balance) || 0), 0), [debts])
-  const totalCurrent = useMemo(() =>
-    debts.reduce((sum, d) => sum + Number(d.balance || 0), 0), [debts])
-  const totalPaidOff = Math.max(0, totalStarting - totalCurrent)
-  const pctPaidOff = totalStarting > 0 ? (totalPaidOff / totalStarting) * 100 : 0
+  useEffect(() => { setDraftHandle(handle) }, [handle])
+  useEffect(() => {
+    if (!user) return
+    myClubs(user.id).then((r) => setClubs(r.clubs))
+  }, [user])
 
-  const status = memberStatus(pctPaidOff)
-  const achievements = useMemo(() => computeAchievements(debts), [debts])
-  const unlockedCount = achievements.filter((a) => a.unlocked).length
+  const earned = earnedMilestones(startingDebt, currentDebt)
+  const earnedIds = new Set(earned.map((m) => m.id))
 
-  const checklist = [
-    { label: 'Create your account',        done: Boolean(user),                    href: null },
-    { label: 'Enter your debts',           done: debts.length > 0,                 href: '/calculator', cta: 'Add debts' },
-    { label: 'Set your monthly budget',    done: Boolean(monthlyIncome || maxMonthlyPayment), href: '/calculator', cta: 'Set budget' },
-    { label: 'Log your first payment',     done: payments.length > 0,              href: '/?log=1', cta: 'Log one' },
-    { label: 'Start a safety net',         done: goals.length > 0,                 href: '/', cta: 'Start it' },
-    { label: 'Ask Miles a question',       done: Boolean(localStorage.getItem('zc_asked_miles')), href: '/coach', cta: 'Talk to Miles' },
-  ]
-
-  const setupPct = Math.round((checklist.filter((c) => c.done).length / checklist.length) * 100)
+  const save = async (e) => {
+    e.preventDefault()
+    const total = Number(draftTotal.replace(/[^0-9]/g, ''))
+    await updateIdentity({ handle: draftHandle.trim() })
+    if (total > 0) await adjustTotal({ current: total })
+    setEditing(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
 
   return (
-    <section className="mx-auto max-w-4xl px-4 py-6 text-slate-900 sm:px-6 sm:py-16 dark:text-slate-100">
-      {birthdayToday && (
-        <div className="mb-4 rounded-3xl border border-yellow-200 bg-gradient-to-r from-yellow-50 to-amber-50 px-6 py-5 text-center sm:mb-6 dark:border-yellow-800 dark:from-yellow-950/40 dark:to-amber-950/40">
-          <p className="text-2xl">🎂</p>
-          <p className="mt-1 text-lg font-bold text-amber-700 dark:text-amber-400">
-            Happy birthday{about.fullName ? `, ${about.fullName.split(' ')[0]}` : ''}!
-          </p>
-          <p className="mt-1 text-sm text-amber-600 dark:text-amber-500">
-            Another year wiser — and every month, closer to zero. Enjoy your day.
-          </p>
+    <section className="mx-auto max-w-2xl px-4 py-5 sm:px-6 sm:py-10">
+      {/* Identity + the journey */}
+      <div className="rounded-[28px] bg-slate-950 p-6 text-white sm:p-8">
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">Zero profile</p>
+        <h1 className="mt-1.5 text-3xl font-black tracking-tight">{handle}</h1>
+
+        <div className="mt-7 flex items-baseline gap-3">
+          <span className="text-2xl font-black tracking-tight text-slate-500">{money(startingDebt)}</span>
+          <span className="text-slate-600">→</span>
+          <span className="text-2xl font-black tracking-tight text-white">$0</span>
         </div>
-      )}
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1fr_1.4fr]">
 
-        {/* Left — profile card */}
-        <div className="flex flex-col gap-4 sm:gap-6">
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+          <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-1000" style={{ width: `${Math.max(progressPct > 0 ? 2 : 0, progressPct)}%` }} />
+        </div>
 
-          {/* Identity */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white">
-                {(displayName?.[0] ?? '?').toUpperCase()}
+        <div className="mt-6 grid grid-cols-2 gap-y-5 border-t border-white/10 pt-5 sm:grid-cols-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Complete</p>
+            <p className="mt-1 text-lg font-black text-emerald-400">{progressPct.toFixed(1)}%</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Eliminated</p>
+            <p className="mt-1 text-lg font-black">{showAmounts ? money(eliminated) : '—'}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Streak</p>
+            <p className="mt-1 text-lg font-black">{streakMonths > 0 ? `🔥 ${streakMonths}mo` : '—'}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Goal</p>
+            <p className="mt-1 text-lg font-black">{monthLabel(goalDate) ?? '—'}</p>
+          </div>
+        </div>
+
+        {clubs.length > 0 && (
+          <p className="mt-5 border-t border-white/10 pt-4 text-sm text-slate-400">
+            Club: <Link to="/clubs" className="font-bold text-white underline decoration-slate-600 underline-offset-4">{clubs.map((c) => c.name).join(', ')}</Link>
+          </p>
+        )}
+      </div>
+
+      {/* Badges — everything, so the unearned ones read as a ladder */}
+      <div className="mt-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 dark:bg-slate-900 dark:ring-slate-800">
+        <div className="flex items-baseline justify-between">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Badges</p>
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{earned.length} / {MILESTONES.length}</p>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {MILESTONES.map((m) => {
+            const has = earnedIds.has(m.id)
+            return (
+              <div
+                key={m.id}
+                className={`rounded-2xl px-3 py-3 text-center transition ${
+                  has ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
+                }`}
+              >
+                <p className={`text-xl ${has ? '' : 'opacity-30 grayscale'}`}>{m.emoji}</p>
+                <p className="mt-1 text-[11px] font-bold leading-tight">{m.label}</p>
               </div>
-              <div className="min-w-0">
-                <p className="truncate font-bold text-slate-900 dark:text-slate-100">{displayName}</p>
-                {about.fullName && user?.email && (
-                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
-                )}
-                <p className="text-sm text-slate-500 dark:text-slate-400">Community: <span className="font-medium text-slate-600 dark:text-slate-300">{username}</span></p>
-              </div>
-            </div>
+            )
+          })}
+        </div>
+      </div>
 
-            <div className="mt-5 flex items-center gap-3">
-              <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${status.color}`}>
-                {status.label}
+      {/* Settings */}
+      <div className="mt-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 dark:bg-slate-900 dark:ring-slate-800">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Settings</p>
+
+        {editing ? (
+          <form onSubmit={save} className="mt-4 space-y-3">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Handle
+              <input
+                value={draftHandle}
+                maxLength={24}
+                onChange={(e) => setDraftHandle(e.target.value)}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Correct your current debt
+              <input
+                inputMode="numeric"
+                value={draftTotal}
+                placeholder={String(Math.round(currentDebt))}
+                onChange={(e) => setDraftTotal(e.target.value)}
+                className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+              />
+              <span className="mt-1 block text-[11px] font-normal text-slate-400">
+                For interest or a new balance. It won't count as progress.
               </span>
-              {isPro && (
-                <span className="rounded-full bg-blue-100 px-3 py-1.5 text-xs font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                  Pro
-                </span>
-              )}
+            </label>
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={() => setEditing(false)} className="flex-1 rounded-full border border-slate-200 py-3 text-sm font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">Cancel</button>
+              <button type="submit" className="flex-[2] rounded-full bg-slate-900 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-900">Save</button>
             </div>
-
-            {/* Progress bar */}
-            <div className="mt-5">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>Progress to zero</span>
-                <span className="font-semibold">{Math.round(pctPaidOff)}%</span>
-              </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div className="h-full rounded-full bg-blue-600 transition-all duration-700 dark:bg-blue-500" style={{ width: `${pctPaidOff}%` }} />
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl bg-slate-50 p-3 text-center dark:bg-slate-800">
-                <p className="text-xs text-slate-500 dark:text-slate-400">Started</p>
-                <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">${totalStarting.toLocaleString()}</p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-3 text-center dark:bg-slate-800">
-                <p className="text-xs text-slate-500 dark:text-slate-400">Current</p>
-                <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">${totalCurrent.toLocaleString()}</p>
-              </div>
-              <div className="rounded-2xl bg-emerald-50 p-3 text-center dark:bg-emerald-950/30">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">Paid off</p>
-                <p className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-400">${totalPaidOff.toLocaleString()}</p>
-              </div>
-            </div>
-
-            {plan.payoffDate && (
-              <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/30">
-                <p className="text-xs text-blue-600 dark:text-blue-400">Debt-free target</p>
-                <p className="mt-0.5 font-bold text-slate-900 dark:text-slate-100">{plan.payoffDate}</p>
-              </div>
-            )}
-          </div>
-
-          {/* About you — name, username, birthday */}
-          <AboutYou />
-
-          {/* Achievements */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">Achievements</p>
-              <span className="text-xs text-slate-500 dark:text-slate-400">{unlockedCount} / {achievements.length}</span>
-            </div>
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {achievements.map((a) => (
-                <div
-                  key={a.id}
-                  title={a.label}
-                  className={`flex aspect-square flex-col items-center justify-center rounded-2xl border p-2 text-center transition ${
-                    a.unlocked
-                      ? 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30'
-                      : 'border-slate-100 bg-slate-50 opacity-40 dark:border-slate-800 dark:bg-slate-800/30'
-                  }`}
-                >
-                  <div className={`flex h-7 w-7 items-center justify-center rounded-full ${a.unlocked ? 'bg-yellow-400' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                    <svg viewBox="0 0 24 24" fill="currentColor" className={`h-3.5 w-3.5 ${a.unlocked ? 'text-slate-900' : 'text-slate-400'}`}>
-                      <path fillRule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 00-.584.859 6.753 6.753 0 006.138 5.6 6.73 6.73 0 002.743 1.346A6.707 6.707 0 019.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.75a2.25 2.25 0 00-2.25 2.25c0 .414.336.75.75.75h15a.75.75 0 00.75-.75 2.25 2.25 0 00-2.25-2.25h-.75v-2.625c0-1.036-.84-1.875-1.875-1.875h-.739a6.706 6.706 0 01-1.112-3.173 6.73 6.73 0 002.743-1.347 6.753 6.753 0 006.139-5.6.75.75 0 00-.585-.858 47.077 47.077 0 00-3.07-.543V2.62a.75.75 0 00-.658-.744 49.798 49.798 0 00-6.093-.377 49.78 49.78 0 00-6.093.377.75.75 0 00-.657.744zm0 2.629c0 1.196.312 2.32.857 3.294A5.266 5.266 0 013.16 5.337a45.6 45.6 0 012.006-.343v.256zm13.5 0v-.256c.674.1 1.343.214 2.006.343a5.265 5.265 0 01-2.863 3.207 6.72 6.72 0 00.857-3.294z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className={`mt-1.5 text-[9px] font-semibold leading-tight ${a.unlocked ? 'text-amber-700 dark:text-amber-400' : 'text-slate-400'}`}>
-                    {a.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right — setup checklist */}
-        <div className="flex flex-col gap-4 sm:gap-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700 dark:bg-slate-900">
-            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Setup</p>
-            <h2 className="mt-2 text-xl font-bold text-slate-900 dark:text-slate-100 sm:text-2xl">Get Zero Club ready</h2>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Complete these steps to get the most out of your journey.</p>
-
-            {/* Progress */}
-            <div className="mt-5">
-              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                <span>{checklist.filter((c) => c.done).length} of {checklist.length} complete</span>
-                <span className="font-semibold">{setupPct}%</span>
-              </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${setupPct === 100 ? 'bg-yellow-400' : 'bg-blue-600'}`}
-                  style={{ width: `${setupPct}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-2">
-              {checklist.map((item) => (
-                <ChecklistItem key={item.label} {...item} />
-              ))}
-            </div>
-
-            {setupPct === 100 && (
-              <div className="mt-5 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-center dark:border-yellow-800 dark:bg-yellow-950/30">
-                <p className="font-bold text-amber-700 dark:text-amber-400">You're fully set up.</p>
-                <p className="mt-1 text-sm text-amber-600 dark:text-amber-500">Now just show up every month and watch the number shrink.</p>
-              </div>
-            )}
-          </div>
-
-          <Referral />
-          {user && <FoundingMember />}
-
-          <button
-            onClick={() => { resetTour(); navigate('/') }}
-            className="text-xs font-medium text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-slate-700 dark:text-slate-400 dark:decoration-slate-600 dark:hover:text-slate-200"
-          >
-            Replay the walkthrough
+          </form>
+        ) : (
+          <button onClick={() => setEditing(true)} className="mt-3 w-full rounded-2xl bg-slate-50 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-200">
+            Edit handle or debt total
           </button>
+        )}
+        {saved && <p className="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Saved.</p>}
 
-          {user && <DeleteAccount />}
+        {/* Privacy: percentages always show, dollars are the member's call */}
+        <label className="mt-4 flex items-start gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <input
+            type="checkbox"
+            checked={showAmounts}
+            onChange={(e) => updateIdentity({ showAmounts: e.target.checked })}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded accent-emerald-600"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">Show my dollar amounts</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+              Off, your club sees your percentage and badges but never your balances.
+            </span>
+          </span>
+        </label>
+      </div>
+
+      <div className="mt-3"><Referral /></div>
+
+      <div className="mt-3 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100 sm:p-6 dark:bg-slate-900 dark:ring-slate-800">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Account</p>
+        <p className="mt-2 truncate text-sm text-slate-600 dark:text-slate-300">{user?.email}</p>
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+          <button onClick={signOut} className="font-semibold text-slate-600 underline decoration-slate-300 underline-offset-4 dark:text-slate-300">Sign out</button>
+          <Link to="/privacy" className="font-semibold text-slate-600 underline decoration-slate-300 underline-offset-4 dark:text-slate-300">Privacy</Link>
         </div>
+        <div className="mt-4"><DeleteAccount /></div>
       </div>
     </section>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useDebt } from '../context/DebtContext.jsx'
+import { useZero } from '../context/ZeroContext.jsx'
 
 const DISMISS_KEY = 'zc_install_dismissed'
 
@@ -23,7 +23,7 @@ const ShareIcon = () => (
 // Asking someone to install before they have anything in the app converts badly
 // and reads as pushy. This waits until there is a plan worth coming back to.
 const InstallPrompt = () => {
-  const { debts } = useDebt()
+  const { hasZero } = useZero()
   const [dismissed, setDismissed] = useState(() => {
     try { return Boolean(localStorage.getItem(DISMISS_KEY)) } catch { return true }
   })
@@ -55,7 +55,7 @@ const InstallPrompt = () => {
     close()
   }
 
-  if (dismissed || !debts.length || (!installEvent && !showIosHint)) return null
+  if (dismissed || !hasZero || (!installEvent && !showIosHint)) return null
 
   return (
     <div className="fixed inset-x-0 bottom-[calc(86px+env(safe-area-inset-bottom))] z-30 px-4 md:bottom-6">

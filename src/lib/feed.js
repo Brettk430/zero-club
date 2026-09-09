@@ -45,6 +45,33 @@ export const postMilestone = async (user, milestone) => {
   })
 }
 
+// The rebuild's post: an elimination, with what's left after it. Handle comes
+// from the profile rather than user_metadata now — it is the same name that
+// appears on club standings, so the two must never drift apart.
+export const postElimination = async (user, handle, { amount, remaining, clubId = null }) => {
+  if (!supabase || !user || !amount) return
+  await supabase.from('posts').insert({
+    user_id: user.id,
+    username: handle || username(user),
+    type: 'payment',
+    payload: { amount: Number(amount), remaining: Number(remaining) },
+    club_id: clubId,
+    group_id: loadGroup(user) || null,
+  })
+}
+
+export const postZeroMilestone = async (user, handle, milestone, clubId = null) => {
+  if (!supabase || !user || !milestone) return
+  await supabase.from('posts').insert({
+    user_id: user.id,
+    username: handle || username(user),
+    type: 'milestone',
+    payload: { label: milestone.label, emoji: milestone.emoji },
+    club_id: clubId,
+    group_id: loadGroup(user) || null,
+  })
+}
+
 // Posts with aggregated reactions and comments, newest first.
 // scope: 'all' | group id.
 export const fetchFeed = async (scope = 'all', currentUserId = null) => {
