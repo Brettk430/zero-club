@@ -5,8 +5,8 @@ import Onboarding from './components/Onboarding.jsx'
 import Home from './pages/Home.jsx'
 import Calculator from './pages/Calculator.jsx'
 import Plan from './pages/Plan.jsx'
-import { DebtProvider } from './context/DebtContext.jsx'
-import { AuthProvider } from './context/AuthContext.jsx'
+import { DebtProvider, useDebt } from './context/DebtContext.jsx'
+import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { recordVisit } from './lib/payments.js'
 
@@ -35,9 +35,17 @@ const hasExistingDebts = () => {
 }
 
 function AppContent() {
+  const { user } = useAuth()
+  const { debts } = useDebt()
   const [onboarded, setOnboarded] = useState(
     () => Boolean(localStorage.getItem('zc_onboarded')) || hasExistingDebts()
   )
+
+  // A signed-in member whose plan has arrived from the cloud has already done
+  // this — on a new device (or an iOS home-screen PWA, which starts with empty
+  // storage) the overlay would otherwise cover the app they already set up.
+  // Onboarding itself is unaffected: sign-in happens at its final step.
+  const showOnboarding = !onboarded && !(user && debts.length > 0)
 
   const completeOnboarding = () => {
     localStorage.setItem('zc_onboarded', '1')
@@ -56,7 +64,7 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      {!onboarded && <Onboarding onComplete={completeOnboarding} />}
+      {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           <Route element={<Layout />}>

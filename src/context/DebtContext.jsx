@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { calculatePayoffPlan, comparePlans, normalizeDebt } from '../lib/debtUtils.js'
 import { loadPayments, savePayments, makePayment } from '../lib/payments.js'
 import { loadGoals, saveGoals, makeGoal } from '../lib/savings.js'
-import { clearMemberData, lastUserId, rememberUserId } from '../lib/localData.js'
+import { clearMemberData, lastUserId, rememberUserId, localDataStamp, setLocalDataStamp } from '../lib/localData.js'
+import { loadSeenAchievements, markUnlockedAsSeen } from '../lib/milestones.js'
 import { supabase } from '../lib/supabaseClient.js'
 import { track } from '../lib/analytics.js'
 
@@ -34,6 +35,19 @@ const repairStartingBalances = (debts, payments) =>
     return (Number(debt.startingBalance) || 0) < floor
       ? { ...debt, startingBalance: floor }
       : debt
+  })
+
+// The comparable shape of a plan. Deliberately excludes the sync timestamp:
+// including it would make every payload differ from the last and push forever.
+const syncPayload = ({ debts, monthlyIncome, maxMonthlyPayment, method, payments, goals }) =>
+  JSON.stringify({
+    debts,
+    monthlyIncome,
+    maxMonthlyPayment,
+    method,
+    payments: payments.slice(-500), // metadata has size limits
+    goals,
+    seenAchievements: loadSeenAchievements(),
   })
 
 export const DebtProvider = ({ children }) => {
@@ -69,12 +83,20 @@ export const DebtProvider = ({ children }) => {
   }, [goals])
 
   // ── Cloud sync ──────────────────────────────────────────────────────────
-  // The plan lives in auth user_metadata (zc_data) so it follows the user
-  // across devices and into the native app. Local storage stays the source
-  // of truth on this device: cloud data is only adopted when local is empty,
-  // and every local change is pushed (debounced) while signed in.
+  // The plan lives in auth user_metadata (zc_data) so it follows the member
+  // across devices. Whichever copy was written last wins: every push stamps
+  // `updatedAt` and mirrors it into local storage, so on sign-in a device can
+  // tell whether the account moved on without it. That comparison — rather
+  // than "adopt only when local is empty" — is what lets an iOS home-screen
+  // PWA (its own storage container, so always near-empty) pick up the plan the
+  // browser built, without a half-finished local copy overwriting the real one.
   const [syncUserId, setSyncUserId] = useState(null)
   const lastPushedRef = useRef(null)
+
+  // The auth listener is registered once, so it needs a live view of state
+  // rather than the values captured at mount.
+  const stateRef = useRef(null)
+  stateRef.current = { debts, payments, goals, monthlyIncome, maxMonthlyPayment, method }
 
   // Wipe this device's copy of a member's plan (state + storage)
   const resetLocalState = () => {
@@ -86,6 +108,30 @@ export const DebtProvider = ({ children }) => {
     setMonthlyIncome('')
     setMaxMonthlyPayment('')
     setMethod('avalanche')
+  }
+
+  // Replace this device's plan with the account's copy.
+  const adoptCloudPlan = (cloud) => {
+    const cloudPayments = Array.isArray(cloud.payments) ? cloud.payments : []
+    setMonthlyIncome(cloud.monthlyIncome || '')
+    setMaxMonthlyPayment(cloud.maxMonthlyPayment || '')
+    setMethod(cloud.method || 'avalanche')
+    setPayments(cloudPayments)
+    setGoals(Array.isArray(cloud.goals) ? cloud.goals : [])
+    const adopted = repairStartingBalances(cloud.debts.map(normalizeDebt), cloudPayments)
+    setDebts(adopted)
+
+    // Milestones already earned are history, not news
+    markUnlockedAsSeen(adopted, Array.isArray(cloud.seenAchievements) ? cloud.seenAchievements : [])
+    setLocalDataStamp(Number(cloud.updatedAt || Date.now()))
+    lastPushedRef.current = syncPayload({
+      debts: adopted,
+      monthlyIncome: cloud.monthlyIncome || '',
+      maxMonthlyPayment: cloud.maxMonthlyPayment || '',
+      method: cloud.method || 'avalanche',
+      payments: cloudPayments,
+      goals: Array.isArray(cloud.goals) ? cloud.goals : [],
+    })
   }
 
   useEffect(() => {
@@ -112,35 +158,37 @@ export const DebtProvider = ({ children }) => {
       rememberUserId(user.id)
 
       const cloud = user.user_metadata?.zc_data
-      if (!cloud) return
-      setDebts((local) => {
-        const localEmpty = switchedAccounts || !local.length
-        if (!localEmpty || !Array.isArray(cloud.debts) || !cloud.debts.length) return local
-        // Adopting cloud state wholesale — mark it as already pushed
-        lastPushedRef.current = JSON.stringify(cloud)
-        setMonthlyIncome(cloud.monthlyIncome || '')
-        setMaxMonthlyPayment(cloud.maxMonthlyPayment || '')
-        setMethod(cloud.method || 'avalanche')
-        const cloudPayments = Array.isArray(cloud.payments) ? cloud.payments : []
-        setPayments(cloudPayments)
-        setGoals(Array.isArray(cloud.goals) ? cloud.goals : [])
-        return repairStartingBalances(cloud.debts.map(normalizeDebt), cloudPayments)
-      })
+      if (!cloud || !Array.isArray(cloud.debts) || !cloud.debts.length) return
+
+      const localDebts = switchedAccounts ? [] : (stateRef.current?.debts ?? [])
+      const cloudIsNewer = Number(cloud.updatedAt || 0) > localDataStamp()
+      if (localDebts.length && !cloudIsNewer) return
+
+      adoptCloudPlan(cloud)
     })
     return () => subscription.unsubscribe()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
-    if (!supabase || !syncUserId || !debts.length) return
-    // Metadata has size limits — the most recent payments are plenty for sync
-    const zcData = { debts, monthlyIncome, maxMonthlyPayment, method, payments: payments.slice(-500), goals }
-    const payload = JSON.stringify(zcData)
+    if (!supabase || !syncUserId) return
+    // Nothing to protect yet — and pushing an empty plan before the account's
+    // own copy has been read would wipe it. Once this device has synced once,
+    // an empty plan is a real deletion and must travel.
+    if (!debts.length && !lastPushedRef.current) return
+
+    const payload = syncPayload({ debts, monthlyIncome, maxMonthlyPayment, method, payments, goals })
     if (payload === lastPushedRef.current) return
+
     const timer = setTimeout(() => {
       lastPushedRef.current = payload
+      const updatedAt = Date.now()
+      const zcData = { ...JSON.parse(payload), updatedAt }
       supabase.auth.updateUser({ data: { zc_data: zcData } })
-        .then(({ error }) => { if (error) lastPushedRef.current = null }) // retry on next change
+        .then(({ error }) => {
+          if (error) lastPushedRef.current = null // retry on next change
+          else setLocalDataStamp(updatedAt)
+        })
         .catch(() => { lastPushedRef.current = null })
     }, 1500)
     return () => clearTimeout(timer)

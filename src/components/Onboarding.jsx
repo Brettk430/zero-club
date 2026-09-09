@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDebt } from '../context/DebtContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -238,19 +238,31 @@ const Onboarding = ({ onComplete }) => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
-  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [awaitingAuth, setAwaitingAuth] = useState(false)
 
-  const handleComplete = () => {
-    if (!user) {
-      setShowAuthModal(true)
-      return
-    }
+  const finish = () => {
     onComplete()
     navigate('/')
   }
 
-  if (showAuthModal) {
-    return <AuthModal onClose={() => setShowAuthModal(false)} />
+  const handleComplete = () => {
+    if (!user) {
+      setAwaitingAuth(true)
+      return
+    }
+    finish()
+  }
+
+  // Signing in *is* the last step. Without this the account arrives and the
+  // member is dropped back on the budget screen to press the same button
+  // again — and until they do, this overlay covers the whole app.
+  useEffect(() => {
+    if (awaitingAuth && user) finish()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaitingAuth, user])
+
+  if (awaitingAuth) {
+    return <AuthModal onClose={() => setAwaitingAuth(false)} />
   }
 
   return (

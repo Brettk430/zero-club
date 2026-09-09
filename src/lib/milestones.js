@@ -29,14 +29,39 @@ export const computeAchievements = (debts) => {
   })
 }
 
+const SEEN_KEY = 'zc_seen_achievements'
+
+// Which milestones this member has already been congratulated for. Synced with
+// the account (not just the device) — otherwise signing out and back in wipes
+// the list and every past milestone is celebrated all over again.
+export const loadSeenAchievements = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SEEN_KEY) || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+export const saveSeenAchievements = (ids) => {
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify([...new Set(ids)])) } catch { /* ignore */ }
+}
+
+// Adopting an account's existing plan is catching up, not achieving: everything
+// already unlocked counts as seen so the dashboard doesn't fire a backlog of
+// confetti at someone who just signed in.
+export const markUnlockedAsSeen = (debts, alreadySeen = []) => {
+  const unlocked = computeAchievements(debts).filter((a) => a.unlocked).map((a) => a.id)
+  saveSeenAchievements([...alreadySeen, ...unlocked])
+}
+
 export const getNewlyUnlocked = (debts) => {
   const achievements = computeAchievements(debts)
-  const seenKey = 'zc_seen_achievements'
-  const seen = new Set(JSON.parse(localStorage.getItem(seenKey) || '[]'))
+  const seen = new Set(loadSeenAchievements())
   const newOnes = achievements.filter((a) => a.unlocked && !seen.has(a.id))
   if (newOnes.length) {
     newOnes.forEach((a) => seen.add(a.id))
-    localStorage.setItem(seenKey, JSON.stringify([...seen]))
+    saveSeenAchievements([...seen])
   }
   return newOnes
 }

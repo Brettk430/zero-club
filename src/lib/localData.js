@@ -26,6 +26,7 @@ const MEMBER_KEYS = [
   'zc_checked_in',
   'zc_asked_miles',
   'zc_visit_days',
+  'zc_data_updated_at',
 ]
 
 const TOUR_KEY = 'zc_toured'
@@ -67,4 +68,22 @@ export const rememberUserId = (id) => {
     if (id) window.localStorage.setItem(LAST_USER_KEY, id)
     else window.localStorage.removeItem(LAST_USER_KEY)
   } catch { /* ignore */ }
+}
+
+// Cloud sync watermark. Written after every successful push and after adopting
+// cloud state, so a device that has been away can tell whether the account's
+// data moved on without it (an iOS home-screen PWA gets its own storage
+// container, so this is the only way it learns the browser saved newer data).
+const SYNC_STAMP_KEY = 'zc_data_updated_at'
+
+export const localDataStamp = () => {
+  try {
+    return Number(window.localStorage.getItem(SYNC_STAMP_KEY)) || 0
+  } catch {
+    return 0
+  }
+}
+
+export const setLocalDataStamp = (stamp) => {
+  try { window.localStorage.setItem(SYNC_STAMP_KEY, String(stamp)) } catch { /* ignore */ }
 }

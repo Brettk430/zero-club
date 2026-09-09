@@ -53,6 +53,7 @@ const Dashboard = () => {
   const { debts, plan, payments } = useDebt()
   const { user } = useAuth()
   const [logging, setLogging] = useState(false)
+  const [showSafetyNet, setShowSafetyNet] = useState(false)
   // Tour disabled by default — reduced cognitive load on first login
   const [touring, setTouring] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -81,6 +82,18 @@ const Dashboard = () => {
     target.setMonth(target.getMonth() + plan.monthsUntilPayoff)
     return Math.max(0, Math.round((target - new Date()) / 86400000))
   }, [plan.monthsUntilPayoff])
+
+  // Momentum beats totals: what moved since the 1st is the number that says
+  // whether this month is going anywhere.
+  const paidThisMonth = useMemo(() => {
+    const now = new Date()
+    return payments.reduce((sum, p) => {
+      const d = new Date(p.date)
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+        ? sum + (Number(p.amount) || 0)
+        : sum
+    }, 0)
+  }, [payments])
 
   const recent = payments.slice(-3).reverse()
 
@@ -131,31 +144,18 @@ const Dashboard = () => {
         >
           See your progress →
         </Link>
+
+        <p className="mt-5 border-t border-slate-100 pt-4 text-center text-sm leading-6 text-slate-500 dark:border-slate-800 dark:text-slate-400">
+          {todaysMotivation()}
+        </p>
       </div>
 
-      {/* Motivation */}
-      <div className="mt-4 rounded-2xl bg-slate-900 px-6 py-5 dark:bg-slate-800">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Today's motivation</p>
-        <p className="mt-1.5 text-sm font-medium leading-6 text-white">{todaysMotivation()}</p>
-      </div>
-
-      {/* Stats */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4">
-        <Stat label="Payment streak" value={streak > 0 ? `🔥 ${streak}w` : '—'} sub={streak > 0 ? 'Streak going' : 'Log to start'} green={streak > 0} />
-        <Stat label="Days until debt free" value={daysUntilFree != null ? daysUntilFree.toLocaleString() : '—'} sub={plan.payoffDate || undefined} />
-        <Stat label="Current balance" value={`$${totalCurrent.toLocaleString()}`} />
-        <Stat label="Remaining interest" value={plan.paymentTooLow ? '—' : `$${plan.totalInterest.toLocaleString()}`} sub={plan.paymentTooLow ? 'Raise your payment' : 'If you follow the plan'} />
-      </div>
-
-      {/* Upcoming payment */}
-      <div className="mt-4 flex items-center justify-between rounded-2xl bg-white px-6 py-4 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Upcoming payment</p>
-          <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">${plan.monthlyPayment.toLocaleString()}<span className="ml-1.5 text-xs font-normal text-slate-500 dark:text-slate-400">/ month</span></p>
-        </div>
-        <Link to="/plan" className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-          View plan →
-        </Link>
+      {/* Stats — the three numbers that answer "am I moving?" Balance lives in
+          the debts card below and interest projections on the plan page. */}
+      <div className="mt-4 grid grid-cols-3 gap-3 sm:gap-4">
+        <Stat label="Streak" value={streak > 0 ? `🔥 ${streak}w` : '—'} sub={streak > 0 ? 'Going' : 'Log to start'} green={streak > 0} />
+        <Stat label="This month" value={`$${paidThisMonth.toLocaleString()}`} sub={paidThisMonth > 0 ? 'Paid off' : 'Nothing yet'} green={paidThisMonth > 0} />
+        <Stat label="Debt-free" value={plan.payoffDate || '—'} sub={daysUntilFree != null ? `${daysUntilFree.toLocaleString()} days` : undefined} />
       </div>
 
       {/* What you actually owe, and the way in to change it */}
@@ -198,11 +198,28 @@ const Dashboard = () => {
           <p className="text-sm text-slate-500 dark:text-slate-400">Total owed</p>
           <p className="text-lg font-bold text-slate-900 dark:text-white">${totalCurrent.toLocaleString()}</p>
         </div>
+        <Link to="/plan" className="mt-2 flex items-baseline justify-between text-xs text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+          <span>Paying ${plan.monthlyPayment.toLocaleString()}/mo</span>
+          <span className="font-semibold underline decoration-slate-300 underline-offset-4 dark:decoration-slate-600">View plan →</span>
+        </Link>
       </div>
 
-      {/* Safety net — the thing that keeps the plan alive */}
+      {/* Safety net — real, but not everyone's next move. Folded away so the
+          dashboard stays about the one loop: pay, watch it drop. */}
       <div className="mt-4">
-        <SafetyNet />
+        <button
+          type="button"
+          onClick={() => setShowSafetyNet((v) => !v)}
+          className="flex w-full items-center justify-between rounded-2xl bg-white px-6 py-4 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">Safety net</span>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">{showSafetyNet ? 'Hide' : 'Show'}</span>
+        </button>
+        {showSafetyNet && (
+          <div className="mt-3">
+            <SafetyNet />
+          </div>
+        )}
       </div>
 
       {/* Recent activity */}
