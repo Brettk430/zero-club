@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "zero-club",
-      "runtimeExecutable": "sh",
-      "runtimeArgs": ["-c", "npx vite --port $PORT --strictPort"],
-      "autoPort": true
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite"],
+      "port": 5173
     }
   ]
 }

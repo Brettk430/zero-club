@@ -41,8 +41,10 @@ const Ring = ({ pct }) => {
 
 const Stat = ({ label, value, sub, green }) => (
   <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:p-5 dark:bg-slate-900 dark:ring-slate-800">
-    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">{label}</p>
-    <p className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${green ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+    {/* Reserved height keeps the three values on one baseline when a label
+        wraps to two lines at phone widths. */}
+    <p className="min-h-[2.5em] text-[11px] font-semibold uppercase leading-tight tracking-wide text-slate-500 dark:text-slate-400">{label}</p>
+    <p className={`text-lg font-bold tracking-tight sm:text-2xl ${green ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
       {value}
     </p>
     {sub && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{sub}</p>}
@@ -104,7 +106,10 @@ const Dashboard = () => {
     const fresh = getNewlyUnlocked(debts)
     if (fresh.length) {
       setCelebration(fresh[0])
-      fresh.forEach((m) => postMilestone(user, m)) // share the win with the feed
+      // "Plan created" unlocks for everyone the moment they add a debt, so
+      // posting it buries the actual payments under identical trophies. Earned
+      // milestones go to the feed; showing up doesn't.
+      fresh.filter((m) => m.type !== 'start').forEach((m) => postMilestone(user, m))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debts])

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { supabase } from '../lib/supabaseClient.js'
 import { Link } from 'react-router-dom'
@@ -26,15 +26,55 @@ const ReactionButton = ({ active, emoji, count, onClick, disabled }) => (
     type="button"
     onClick={onClick}
     disabled={disabled}
-    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition disabled:opacity-40 ${
+    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all duration-150 active:scale-90 disabled:opacity-40 ${
       active
-        ? 'bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900'
+        ? 'scale-105 bg-emerald-50 font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900'
         : 'bg-slate-50 text-slate-500 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
     }`}
   >
     <span>{emoji}</span>
     {count > 0 && <span className="text-xs">{count}</span>}
   </button>
+)
+
+// Collective momentum, deliberately not a leaderboard. Upward comparison is
+// poison in a debt app — someone paying $50 against $40k does not need to see
+// who paid $3,000 this week. A shared total makes the same room feel busy
+// without ranking anyone in it.
+const weekStats = (posts, myHandle) => {
+  const since = Date.now() - 7 * 86400000
+  const recent = posts.filter((p) => new Date(p.created_at).getTime() >= since)
+  const payments = recent.filter((p) => p.type === 'payment')
+  return {
+    total: payments.reduce((sum, p) => sum + (Number(p.payload?.amount) || 0), 0),
+    people: new Set(recent.map((p) => p.username)).size,
+    milestones: recent.filter((p) => p.type !== 'payment').length,
+    iPosted: recent.some((p) => p.username === myHandle),
+    cheersGiven: recent.filter((p) => p.myReactions?.size > 0).length,
+  }
+}
+
+const WeekCard = ({ stats, signedIn }) => (
+  <div className="rounded-3xl bg-slate-900 p-5 text-white sm:p-6 dark:bg-slate-800">
+    <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">This week, together</p>
+    <p className="mt-1.5 text-3xl font-bold tracking-tight text-emerald-400">
+      ${Math.round(stats.total).toLocaleString()}
+    </p>
+    <p className="mt-1 text-sm text-slate-300">
+      paid down by {stats.people} {stats.people === 1 ? 'member' : 'members'}
+      {stats.milestones > 0 && <> · {stats.milestones} milestone{stats.milestones === 1 ? '' : 's'} hit</>}
+    </p>
+
+    {signedIn && (
+      <p className="mt-4 border-t border-white/10 pt-3 text-sm text-slate-300">
+        {!stats.iPosted
+          ? <>Your payment isn't in this number yet. <span className="font-semibold text-white">Log one and it lands here.</span></>
+          : stats.cheersGiven === 0
+            ? <>You're in it 💪 — <span className="font-semibold text-white">now go cheer someone.</span></>
+            : <>You're in it 💪 and you've cheered {stats.cheersGiven} {stats.cheersGiven === 1 ? 'person' : 'people'} this week.</>}
+      </p>
+    )}
+  </div>
 )
 
 const PostCard = ({ post, user, onReact, onComment }) => {
@@ -122,6 +162,8 @@ const Community = () => {
   const [ready, setReady] = useState(true)
   const [loading, setLoading] = useState(true)
   const handle = user?.user_metadata?.username || ensureUsername()
+  // Computed from the loaded window (50 posts) — exact at this scale
+  const week = useMemo(() => weekStats(posts, handle), [posts, handle])
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -219,6 +261,12 @@ const Community = () => {
           </button>
         ))}
       </div>
+
+      {ready && posts.length > 0 && (
+        <div className="mt-4">
+          <WeekCard stats={week} signedIn={Boolean(user)} />
+        </div>
+      )}
 
       {/* Feed */}
       <div className="mt-4 space-y-3">

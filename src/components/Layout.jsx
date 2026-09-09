@@ -103,8 +103,10 @@ const BottomNav = () => {
   const location = useLocation()
 
   return (
+    // Sits below overlays (z-50). Tied with them it won on DOM order and
+    // covered the payment sheet's submit button on mobile.
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 backdrop-blur-lg md:hidden dark:border-slate-800 dark:bg-slate-950/95"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-lg md:hidden dark:border-slate-800 dark:bg-slate-950/95"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex">
