@@ -162,15 +162,47 @@ export const ZeroProvider = ({ children }) => {
     return { ...payment, remaining: next }
   }, [currentDebt, user, pushProfile])
 
-  // The total can move for reasons that are not payments — interest, a new
-  // card, a balance that was wrong on day one. Adjusting the current figure
-  // without crediting it as progress keeps the eliminated number honest.
-  const adjustTotal = useCallback(async ({ current, starting, goal }) => {
-    const patch = {}
-    if (current !== undefined) { setCurrentDebt(Math.max(0, Number(current) || 0)); patch.current_debt = Math.max(0, Number(current) || 0) }
-    if (starting !== undefined) { setStartingDebt(Math.max(0, Number(starting) || 0)); patch.starting_debt = Math.max(0, Number(starting) || 0) }
-    if (goal !== undefined) { setGoalDate(goal); patch.goal_date = goal || null }
-    await pushProfile(patch)
+  // A balance can move for reasons that aren't payments: interest, a new
+  // charge, or a figure that was simply wrong on day one. Moving `current` on
+  // its own would mint progress out of nothing — drop your balance by $2,000
+  // to fix a typo and you'd be handed $2,000 "eliminated" and the badges that
+  // come with it. So the starting figure moves by the same delta and the
+  // eliminated total, which is what badges and club standings read, holds still.
+  const restateBalance = useCallback(async (nextCurrent) => {
+    const next = Math.max(0, Number(nextCurrent) || 0)
+    const delta = next - currentDebt
+    const nextStarting = Math.max(next, startingDebt + delta)
+
+    setCurrentDebt(next)
+    setStartingDebt(nextStarting)
+    track('balance_restated', { delta })
+    await pushProfile({ current_debt: next, starting_debt: nextStarting })
+  }, [currentDebt, startingDebt, pushProfile])
+
+  // Starting over is its own act, and a destructive one: history and badges go
+  // with it. Kept separate from restating precisely so neither can happen by
+  // accident while someone meant the other.
+  const resetJourney = useCallback(async ({ total, goal }) => {
+    const amount = Math.max(0, Number(total) || 0)
+    setStartingDebt(amount)
+    setCurrentDebt(amount)
+    setPayments([])
+    if (goal !== undefined) setGoalDate(goal || '')
+    track('journey_reset')
+
+    if (supabase && user && cloudReadyRef.current) {
+      await supabase.from('payments').delete().eq('user_id', user.id)
+      await pushProfile({
+        starting_debt: amount,
+        current_debt: amount,
+        ...(goal !== undefined ? { goal_date: goal || null } : {}),
+      })
+    }
+  }, [user, pushProfile])
+
+  const setGoal = useCallback(async (date) => {
+    setGoalDate(date || '')
+    await pushProfile({ goal_date: date || null })
   }, [pushProfile])
 
   const updateIdentity = useCallback(async ({ handle: nextHandle, showAmounts: nextShow }) => {
@@ -192,7 +224,7 @@ export const ZeroProvider = ({ children }) => {
     eliminated: eliminated(startingDebt, currentDebt),
     progressPct: progressPct(startingDebt, currentDebt),
     streakMonths: paymentStreakMonths(payments),
-    setZero, logPayment, adjustTotal, updateIdentity,
+    setZero, logPayment, restateBalance, resetJourney, setGoal, updateIdentity,
   }
 
   return <ZeroContext.Provider value={value}>{children}</ZeroContext.Provider>

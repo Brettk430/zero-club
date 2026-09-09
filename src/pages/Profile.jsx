@@ -13,7 +13,7 @@ const Profile = () => {
   const { user, signOut } = useAuth()
   const {
     startingDebt, currentDebt, goalDate, eliminated, progressPct,
-    streakMonths, handle, showAmounts, updateIdentity, adjustTotal,
+    streakMonths, handle, showAmounts, payments, updateIdentity, restateBalance, resetJourney,
   } = useZero()
 
   const [clubs, setClubs] = useState([])
@@ -21,6 +21,9 @@ const Profile = () => {
   const [draftHandle, setDraftHandle] = useState(handle)
   const [draftTotal, setDraftTotal] = useState('')
   const [saved, setSaved] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [resetTotal, setResetTotal] = useState('')
+  const [confirmReset, setConfirmReset] = useState(false)
 
   useEffect(() => { setDraftHandle(handle) }, [handle])
   useEffect(() => {
@@ -35,10 +38,21 @@ const Profile = () => {
     e.preventDefault()
     const total = Number(draftTotal.replace(/[^0-9]/g, ''))
     await updateIdentity({ handle: draftHandle.trim() })
-    if (total > 0) await adjustTotal({ current: total })
+    if (total > 0) await restateBalance(total)
     setEditing(false)
+    setDraftTotal('')
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
+  }
+
+  const doReset = async (e) => {
+    e.preventDefault()
+    const total = Number(resetTotal.replace(/[^0-9]/g, ''))
+    if (!total) return
+    await resetJourney({ total })
+    setResetting(false)
+    setConfirmReset(false)
+    setResetTotal('')
   }
 
   return (
@@ -124,7 +138,7 @@ const Profile = () => {
               />
             </label>
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Correct your current debt
+              Update what you owe today
               <input
                 inputMode="numeric"
                 value={draftTotal}
@@ -132,8 +146,9 @@ const Profile = () => {
                 onChange={(e) => setDraftTotal(e.target.value)}
                 className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
-              <span className="mt-1 block text-[11px] font-normal text-slate-400">
-                For interest or a new balance. It won't count as progress.
+              <span className="mt-1 block text-[11px] font-normal leading-4 text-slate-400">
+                Interest, a new charge, or a number that was wrong. Your {money(eliminated)} eliminated
+                and your badges stay exactly as they are — to clear those, start over below.
               </span>
             </label>
             <div className="flex gap-2 pt-1">
@@ -163,6 +178,66 @@ const Profile = () => {
             </span>
           </span>
         </label>
+
+        {/* Starting over is deliberately its own act, with its own confirmation:
+            it is the only way to clear history, and there is no undo. */}
+        <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+          {resetting ? (
+            <form onSubmit={doReset}>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Start over</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Clears every payment you've logged and every badge you've earned, then restarts
+                from the number below. Your club memberships and handle stay.
+              </p>
+              <label className="mt-3 block text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Start from
+                <input
+                  inputMode="numeric"
+                  autoFocus
+                  value={resetTotal}
+                  placeholder={String(Math.round(currentDebt))}
+                  onChange={(e) => { setResetTotal(e.target.value); setConfirmReset(false) }}
+                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </label>
+
+              {confirmReset ? (
+                <div className="mt-3 rounded-2xl bg-red-50 p-3 dark:bg-red-950/30">
+                  <p className="text-xs font-semibold leading-5 text-red-700 dark:text-red-300">
+                    This erases {payments.length} logged payment{payments.length === 1 ? '' : 's'} and{' '}
+                    {earned.length} badge{earned.length === 1 ? '' : 's'}. It can't be undone.
+                  </p>
+                  <button type="submit" className="mt-2.5 w-full rounded-full bg-red-600 py-2.5 text-sm font-bold text-white transition hover:bg-red-700">
+                    Yes, erase it and start over
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!Number(resetTotal.replace(/[^0-9]/g, ''))}
+                  onClick={() => setConfirmReset(true)}
+                  className="mt-3 w-full rounded-full bg-slate-900 py-3 text-sm font-bold text-white disabled:opacity-30 dark:bg-white dark:text-slate-900"
+                >
+                  Continue
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => { setResetting(false); setConfirmReset(false); setResetTotal('') }}
+                className="mt-2 w-full py-2 text-xs font-semibold text-slate-400 transition hover:text-slate-600"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setResetting(true)}
+              className="text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-red-600 dark:text-slate-400 dark:decoration-slate-600"
+            >
+              Start over with a new number
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mt-3"><Referral /></div>
