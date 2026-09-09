@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Logo from './Logo.jsx'
 import AuthModal from './AuthModal.jsx'
+import InstallPrompt from './InstallPrompt.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
 
@@ -249,6 +250,7 @@ const Layout = () => {
         </div>
       </footer>
 
+      <InstallPrompt />
       <BottomNav />
     </div>
   )

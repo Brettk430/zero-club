@@ -1,88 +1,77 @@
-const CACHE_VERSION = 'zero-club-v1';
-const CACHE_URLS = [
-  '/',
-  '/index.html',
-  '/favicon.svg',
-  '/manifest.json',
-];
+// Bump to retire every previously cached response in one go.
+const CACHE_VERSION = 'zero-club-v2';
 
-// Install: cache essential files
+// Only the offline fallback is precached. The app shell deliberately is not:
+// see the navigation strategy below.
+const OFFLINE_URLS = ['/index.html', '/favicon.svg', '/manifest.json'];
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => {
-      cache.addAll(CACHE_URLS).catch(() => {
-        // Silently fail if offline during install
-      });
-      self.skipWaiting();
-    })
+    caches.open(CACHE_VERSION)
+      .then((cache) => cache.addAll(OFFLINE_URLS))
+      .catch(() => { /* offline during install — fetch handler still works */ })
+      .then(() => self.skipWaiting())
   );
 });
 
-// Activate: clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_VERSION) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys()
+      .then((names) => Promise.all(
+        names.filter((n) => n !== CACHE_VERSION).map((n) => caches.delete(n))
+      ))
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch: network-first, fallback to cache
+const putInCache = async (request, response) => {
+  const cache = await caches.open(CACHE_VERSION);
+  await cache.put(request, response);
+};
+
+// Try the network, fall back to whatever was cached last.
+const networkFirst = async (request, fallbackUrl) => {
+  try {
+    const response = await fetch(request);
+    if (response.ok) putInCache(request, response.clone());
+    return response;
+  } catch {
+    const cached = await caches.match(request) || (fallbackUrl && await caches.match(fallbackUrl));
+    return cached || new Response('Offline', { status: 503, statusText: 'Offline' });
+  }
+};
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  if (request.method !== 'GET') return;
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return; // Supabase, fonts, analytics
+
+  // Navigations must hit the network first. Serving the shell from cache means
+  // an installed home-screen app keeps running the build it was installed with
+  // and never sees another deploy — the index.html is what points at the
+  // current hashed bundles.
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request, '/index.html'));
     return;
   }
 
-  // Network first for API calls
-  if (request.url.includes('/api/')) {
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // Build output is content-hashed, so a hit is always the right file.
+  if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          if (response.ok) {
-            const cache = caches.open(CACHE_VERSION);
-            cache.then((c) => c.put(request, response.clone()));
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(request).then((response) => {
-            return response || new Response('Offline', { status: 503 });
-          });
-        })
+      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+        if (response.ok) putInCache(request, response.clone());
+        return response;
+      }))
     );
     return;
   }
 
-  // Cache first for assets
-  event.respondWith(
-    caches.match(request).then((response) => {
-      if (response) {
-        return response;
-      }
-      return fetch(request)
-        .then((response) => {
-          if (request.url.includes('/assets/') || request.url.endsWith('.js') || request.url.endsWith('.css')) {
-            const cache = caches.open(CACHE_VERSION);
-            cache.then((c) => c.put(request, response.clone()));
-          }
-          return response;
-        })
-        .catch(() => {
-          // Return a generic offline page for navigations
-          if (request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-          return new Response('Offline', { status: 503 });
-        });
-    })
-  );
+  event.respondWith(networkFirst(request));
 });
