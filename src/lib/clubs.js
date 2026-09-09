@@ -18,17 +18,16 @@ export const myClubs = async (userId) => {
   }
 }
 
+// One call: the club and its founding membership land together, or neither
+// does. Doing it as two inserts from here could strand a club with no members,
+// which the read policy then makes invisible to everyone including its owner.
 export const createClub = async (userId, name) => {
   if (!supabase || !userId) return { error: 'Not signed in' }
-  const { data, error } = await supabase
-    .from('clubs').insert({ name: name.trim(), created_by: userId })
-    .select().single()
-  if (error) return { error: missing(error) ? 'Clubs are not switched on yet.' : error.message }
-
-  const { error: joinError } = await supabase
-    .from('club_members').insert({ club_id: data.id, user_id: userId, role: 'owner' })
-  if (joinError) return { error: joinError.message }
-  return { club: data }
+  const { data, error } = await supabase.rpc('create_club', { club_name: name.trim() })
+  if (error) {
+    return { error: missing(error) ? 'Clubs are not switched on yet.' : error.message }
+  }
+  return { club: Array.isArray(data) ? data[0] : data }
 }
 
 // Clubs are not listable by design, so joining goes through a definer-rights
@@ -76,4 +75,13 @@ export const clubTotals = (rows) => {
     hiddenCount: rows.length - known.length,
     members: rows.length,
   }
+}
+
+// Just the ids, for scoping the feed to a club without pulling everyone's
+// balances along with it.
+export const clubMemberIds = async (clubId) => {
+  if (!supabase || !clubId) return []
+  const { data, error } = await supabase.from('club_members').select('user_id').eq('club_id', clubId)
+  if (error) return []
+  return (data || []).map((r) => r.user_id)
 }

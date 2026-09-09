@@ -9,7 +9,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { recordVisit } from './lib/payments.js'
 
-const Feed = lazy(() => import('./pages/Community.jsx'))
+const Feed = lazy(() => import('./pages/Feed.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const Privacy = lazy(() => import('./pages/Privacy.jsx'))
 

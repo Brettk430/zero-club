@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient.js'
-import { loadGroup } from './groups.js'
 
 // Feed data layer. Every function tolerates the tables not existing yet
 // (migration pending) by returning empty results — the UI shows a warming-up
@@ -21,64 +20,46 @@ export const ensureUsername = () => {
 
 const username = (user) => user?.user_metadata?.username || ensureUsername()
 
-// Auto-post a logged payment, Strava-style: "Brett paid $250 toward Chase Visa."
-export const postPayment = async (user, payment) => {
-  if (!supabase || !user || !payment) return
-  await supabase.from('posts').insert({
-    user_id: user.id,
-    username: username(user),
-    type: 'payment',
-    payload: { amount: Number(payment.amount), debtName: payment.debtName },
-    group_id: loadGroup(user) || null,
-  })
-}
-
-// Auto-post an unlocked milestone: "Brett reached Halfway to Zero."
-export const postMilestone = async (user, milestone) => {
-  if (!supabase || !user || !milestone) return
-  await supabase.from('posts').insert({
-    user_id: user.id,
-    username: username(user),
-    type: 'milestone',
-    payload: { label: milestone.label },
-    group_id: loadGroup(user) || null,
-  })
-}
-
 // The rebuild's post: an elimination, with what's left after it. Handle comes
 // from the profile rather than user_metadata now — it is the same name that
 // appears on club standings, so the two must never drift apart.
-export const postElimination = async (user, handle, { amount, remaining, clubId = null }) => {
+export const postElimination = async (user, handle, { amount, remaining, progressPct, showAmounts = true }) => {
   if (!supabase || !user || !amount) return
+  // A member who hides their balances on club standings would be undone by a
+  // feed post carrying the exact figure, so the amount simply doesn't travel.
+  // The win still posts — that is the point of the room.
+  const payload = showAmounts
+    ? { amount: Number(amount), remaining: Number(remaining), progressPct: Number(progressPct) || 0 }
+    : { hidden: true, progressPct: Number(progressPct) || 0 }
   await supabase.from('posts').insert({
     user_id: user.id,
     username: handle || username(user),
     type: 'payment',
-    payload: { amount: Number(amount), remaining: Number(remaining) },
-    club_id: clubId,
-    group_id: loadGroup(user) || null,
+    payload,
   })
 }
 
-export const postZeroMilestone = async (user, handle, milestone, clubId = null) => {
+export const postZeroMilestone = async (user, handle, milestone) => {
   if (!supabase || !user || !milestone) return
   await supabase.from('posts').insert({
     user_id: user.id,
     username: handle || username(user),
     type: 'milestone',
     payload: { label: milestone.label, emoji: milestone.emoji },
-    club_id: clubId,
-    group_id: loadGroup(user) || null,
   })
 }
 
 // Posts with aggregated reactions and comments, newest first.
 // scope: 'all' | group id.
-export const fetchFeed = async (scope = 'all', currentUserId = null) => {
+// `memberIds` scopes the feed to a club. Filtering on the authors rather than
+// on a club stamped into the post means one payment shows up in every room its
+// author belongs to, which is how it should read when you're in two clubs.
+export const fetchFeed = async ({ memberIds = null, currentUserId = null } = {}) => {
   if (!supabase) return { posts: [], ready: false }
+  if (memberIds && memberIds.length === 0) return { posts: [], ready: true }
 
   let query = supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50)
-  if (scope !== 'all') query = query.eq('group_id', scope)
+  if (memberIds) query = query.in('user_id', memberIds)
   const { data: posts, error } = await query
   if (error) return { posts: [], ready: false } // table missing or unreachable
   if (!posts?.length) return { posts: [], ready: true }
