@@ -6,19 +6,41 @@
 -- actually read — under rules that say exactly how much they get to see.
 
 -- ── Identity + progress ────────────────────────────────────────────────────
+-- Written additively: a `profiles` table already exists from an earlier phase,
+-- so `create table if not exists` would skip it and leave every column below
+-- missing. Each column is added on its own and the whole block is safe to
+-- re-run.
 create table if not exists public.profiles (
-  id             uuid primary key references auth.users(id) on delete cascade,
-  handle         text not null unique check (char_length(handle) between 3 and 24),
-  display_name   text check (char_length(display_name) <= 40),
-  starting_debt  numeric(12,2) not null default 0 check (starting_debt >= 0),
-  current_debt   numeric(12,2) not null default 0 check (current_debt >= 0),
-  goal_date      date,
-  -- Members who would rather not publish balances still appear on standings;
-  -- percentages are the currency of this product, dollars are optional.
-  show_amounts   boolean not null default true,
-  created_at     timestamptz not null default now(),
-  updated_at     timestamptz not null default now()
+  id uuid primary key references auth.users(id) on delete cascade
 );
+
+alter table public.profiles add column if not exists handle         text;
+alter table public.profiles add column if not exists display_name   text;
+alter table public.profiles add column if not exists starting_debt  numeric(12,2) not null default 0;
+alter table public.profiles add column if not exists current_debt   numeric(12,2) not null default 0;
+alter table public.profiles add column if not exists goal_date      date;
+-- Members who would rather not publish balances still appear on standings;
+-- percentages are the currency of this product, dollars are optional.
+alter table public.profiles add column if not exists show_amounts   boolean not null default true;
+alter table public.profiles add column if not exists created_at     timestamptz not null default now();
+alter table public.profiles add column if not exists updated_at     timestamptz not null default now();
+
+-- Existing rows predate handles, so give them one before the column can be
+-- required. Derived from the id, so it is stable and collision-free.
+update public.profiles
+   set handle = 'Member' || substr(replace(id::text, '-', ''), 1, 6)
+ where handle is null;
+
+alter table public.profiles alter column handle set not null;
+create unique index if not exists profiles_handle_key on public.profiles (handle);
+
+alter table public.profiles drop constraint if exists profiles_handle_len;
+alter table public.profiles add  constraint profiles_handle_len
+  check (char_length(handle) between 3 and 24);
+
+alter table public.profiles drop constraint if exists profiles_debt_nonneg;
+alter table public.profiles add  constraint profiles_debt_nonneg
+  check (starting_debt >= 0 and current_debt >= 0);
 
 -- ── Clubs ──────────────────────────────────────────────────────────────────
 create table if not exists public.clubs (
