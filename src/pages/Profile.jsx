@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
 import { myClubs } from '../lib/clubs.js'
 import { earnedMilestones, MILESTONES, money, monthLabel } from '../lib/zero.js'
+import Avatar from '../components/Avatar.jsx'
+import { uploadAvatar, removeOldAvatars } from '../lib/avatars.js'
 import Referral from '../components/Referral.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
 
@@ -13,7 +15,7 @@ const Profile = () => {
   const { user, signOut } = useAuth()
   const {
     startingDebt, currentDebt, goalDate, eliminated, progressPct,
-    streakMonths, handle, showAmounts, payments, updateIdentity, restateBalance, resetJourney,
+    streakMonths, handle, showAmounts, avatarUrl, payments, updateIdentity, restateBalance, resetJourney,
   } = useZero()
 
   const [clubs, setClubs] = useState([])
@@ -24,6 +26,8 @@ const Profile = () => {
   const [resetting, setResetting] = useState(false)
   const [resetTotal, setResetTotal] = useState('')
   const [confirmReset, setConfirmReset] = useState(false)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [photoError, setPhotoError] = useState('')
 
   useEffect(() => { setDraftHandle(handle) }, [handle])
   useEffect(() => {
@@ -45,6 +49,25 @@ const Profile = () => {
     setTimeout(() => setSaved(false), 2500)
   }
 
+  const pickPhoto = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // so re-picking the same file still fires
+    if (!file || !user) return
+    setPhotoBusy(true); setPhotoError('')
+    const { url, error } = await uploadAvatar(user.id, file)
+    if (error) { setPhotoError(error); setPhotoBusy(false); return }
+    await updateIdentity({ avatarUrl: url })
+    removeOldAvatars(user.id, url) // tidy the bucket; not worth blocking on
+    setPhotoBusy(false)
+  }
+
+  const clearPhoto = async () => {
+    setPhotoBusy(true)
+    await updateIdentity({ avatarUrl: '' })
+    if (user) removeOldAvatars(user.id, null)
+    setPhotoBusy(false)
+  }
+
   const doReset = async (e) => {
     e.preventDefault()
     const total = Number(resetTotal.replace(/[^0-9]/g, ''))
@@ -60,7 +83,24 @@ const Profile = () => {
       {/* Identity + the journey */}
       <div className="rounded-[28px] bg-slate-950 p-6 text-white sm:p-8">
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">Zero profile</p>
-        <h1 className="mt-1.5 text-3xl font-black tracking-tight">{handle}</h1>
+        <div className="mt-2 flex items-center gap-4">
+          <label className="group relative cursor-pointer" title="Change photo">
+            <Avatar url={avatarUrl} name={handle} size={64} />
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 text-[10px] font-bold uppercase tracking-wide opacity-0 transition group-hover:opacity-100">
+              {photoBusy ? '…' : 'Edit'}
+            </span>
+            <input type="file" accept="image/*" onChange={pickPhoto} disabled={photoBusy} className="sr-only" />
+          </label>
+          <div className="min-w-0">
+            <h1 className="truncate text-3xl font-black tracking-tight">{handle}</h1>
+            {avatarUrl && (
+              <button onClick={clearPhoto} disabled={photoBusy} className="mt-1 text-xs font-semibold text-slate-500 underline underline-offset-4 transition hover:text-slate-300">
+                Remove photo
+              </button>
+            )}
+          </div>
+        </div>
+        {photoError && <p className="mt-2 text-xs text-red-400">{photoError}</p>}
 
         {/* What's left, and the distance already covered behind it. Leading with
             the starting figure named a number the member had already beaten and

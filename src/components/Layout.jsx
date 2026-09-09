@@ -4,6 +4,8 @@ import Logo from './Logo.jsx'
 import AuthModal from './AuthModal.jsx'
 import InstallPrompt from './InstallPrompt.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useZero } from '../context/ZeroContext.jsx'
+import Avatar from './Avatar.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
 
 const navItems = [
@@ -49,10 +51,10 @@ const MoonIcon = () => (
 )
 
 const UserMenu = () => {
-  const { user, isPro, signOut } = useAuth()
+  const { signOut } = useAuth()
+  const { handle, avatarUrl } = useZero()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const initials = user.email?.[0]?.toUpperCase() ?? '?'
 
   return (
     <div className="relative">
@@ -60,15 +62,11 @@ const UserMenu = () => {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-full border border-slate-200 bg-white pl-2 pr-3 py-1.5 text-sm shadow-sm transition hover:border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
       >
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-          {initials}
-        </span>
-        <span className="hidden max-w-[120px] truncate text-slate-700 sm:inline dark:text-slate-200">{user.email}</span>
-        {isPro && (
-          <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-            Pro
-          </span>
-        )}
+        {/* The handle, not the email address: it is the name the rest of the
+            product knows this member by, and an email on screen in a coffee
+            shop is the one identifier they never chose to show. */}
+        <Avatar url={avatarUrl} name={handle} size={24} />
+        <span className="hidden max-w-[140px] truncate font-semibold text-slate-700 sm:inline dark:text-slate-200">{handle}</span>
       </button>
       {open && (
         <>

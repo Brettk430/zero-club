@@ -13,6 +13,7 @@ const KEYS = {
   payments: 'zc_payments_v2',
   handle: 'zc_username',
   showAmounts: 'zc_show_amounts',
+  avatar: 'zc_avatar_url',
 }
 
 const read = (key, fallback = '') => {
@@ -70,6 +71,7 @@ export const ZeroProvider = ({ children }) => {
   const [payments, setPayments] = useState(() => readJSON(KEYS.payments, []))
   const [handle, setHandle] = useState(() => read(KEYS.handle) || randomHandle())
   const [showAmounts, setShowAmounts] = useState(() => read(KEYS.showAmounts, 'true') !== 'false')
+  const [avatarUrl, setAvatarUrl] = useState(() => read(KEYS.avatar) || '')
   const [syncing, setSyncing] = useState(false)
   // Someone arriving cold — an invite link, a shared card — should meet the
   // pitch before a form. Signed-in members without a number skip straight to it.
@@ -95,6 +97,7 @@ export const ZeroProvider = ({ children }) => {
   useEffect(() => { write(KEYS.goal, goalDate) }, [goalDate])
   useEffect(() => { write(KEYS.handle, handle) }, [handle])
   useEffect(() => { write(KEYS.showAmounts, showAmounts) }, [showAmounts])
+  useEffect(() => { write(KEYS.avatar, avatarUrl) }, [avatarUrl])
   useEffect(() => {
     try { window.localStorage.setItem(KEYS.payments, JSON.stringify(payments.slice(-500))) } catch { /* ignore */ }
   }, [payments])
@@ -140,6 +143,7 @@ export const ZeroProvider = ({ children }) => {
         setGoalDate(profile.goal_date || '')
         setHandle(profile.handle)
         setShowAmounts(profile.show_amounts !== false)
+        setAvatarUrl(profile.avatar_url || '')
       } else if (profile) {
         // The row exists but carries no number — the state a first sign-in
         // leaves behind. Adopting its zero would wipe the number this device
@@ -147,6 +151,7 @@ export const ZeroProvider = ({ children }) => {
         // The device's answer wins, and gets published.
         setHandle(profile.handle)
         setShowAmounts(profile.show_amounts !== false)
+        setAvatarUrl(profile.avatar_url || '')
         if (localStarting > 0) {
           const fixed = reconcile(localStarting, Number(read(KEYS.current)) || localStarting)
           await supabase.from('profiles').update({
@@ -265,10 +270,11 @@ export const ZeroProvider = ({ children }) => {
     await pushProfile({ goal_date: date || null })
   }, [pushProfile])
 
-  const updateIdentity = useCallback(async ({ handle: nextHandle, showAmounts: nextShow }) => {
+  const updateIdentity = useCallback(async ({ handle: nextHandle, showAmounts: nextShow, avatarUrl: nextAvatar }) => {
     const patch = {}
     if (nextHandle !== undefined) { setHandle(nextHandle); patch.handle = nextHandle }
     if (nextShow !== undefined) { setShowAmounts(nextShow); patch.show_amounts = nextShow }
+    if (nextAvatar !== undefined) { setAvatarUrl(nextAvatar); patch.avatar_url = nextAvatar || null }
     await pushProfile(patch)
   }, [pushProfile])
 
@@ -286,7 +292,7 @@ export const ZeroProvider = ({ children }) => {
   }, [needsOnboarding])
 
   const value = {
-    startingDebt, currentDebt, goalDate, payments, handle, showAmounts,
+    startingDebt, currentDebt, goalDate, payments, handle, showAmounts, avatarUrl,
     hasZero, cloudReady, syncing, profileResolved,
     onboardingOpen,
     openOnboarding: () => setOnboardingRequested(true),

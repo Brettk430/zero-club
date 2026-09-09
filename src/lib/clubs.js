@@ -31,9 +31,9 @@ export const myClubs = async (userId) => {
 // One call: the club and its founding membership land together, or neither
 // does. Doing it as two inserts from here could strand a club with no members,
 // which the read policy then makes invisible to everyone including its owner.
-export const createClub = async (userId, name) => {
+export const createClub = async (userId, name, isPublic = false) => {
   if (!supabase || !userId) return { error: 'Not signed in' }
-  const { data, error } = await supabase.rpc('create_club', { club_name: name.trim() })
+  const { data, error } = await supabase.rpc('create_club', { club_name: name.trim(), public_club: isPublic })
   if (error) return { error: notReady(error) ?? error.message }
   return { club: Array.isArray(data) ? data[0] : data }
 }
@@ -45,6 +45,31 @@ export const joinClub = async (code) => {
   const { data, error } = await supabase.rpc('join_club', { code })
   if (error) return { error: notReady(error) ?? error.message }
   if (!data) return { error: "That code doesn't match a club." }
+  return { clubId: data }
+}
+
+// Browsing is deliberately separate from joining: this lists names and sizes,
+// never anybody's numbers.
+export const discoverClubs = async (search = '') => {
+  if (!supabase) return { clubs: [], ready: false }
+  const { data, error } = await supabase.rpc('discover_clubs', { search: search || null, limit_count: 30 })
+  if (error) return { clubs: [], ready: !notReady(error) }
+  return {
+    ready: true,
+    clubs: (data || []).map((c) => ({
+      id: c.id,
+      name: c.name,
+      memberCount: Number(c.member_count) || 0,
+      eliminated: c.eliminated === null ? null : Number(c.eliminated),
+    })),
+  }
+}
+
+export const joinPublicClub = async (clubId) => {
+  if (!supabase) return { error: 'Not available' }
+  const { data, error } = await supabase.rpc('join_public_club', { club: clubId })
+  if (error) return { error: notReady(error) ?? error.message }
+  if (!data) return { error: 'That club is no longer open to join.' }
   return { clubId: data }
 }
 
@@ -65,6 +90,7 @@ export const clubStandings = async (clubId) => {
       displayName: r.display_name,
       progressPct: Number(r.progress_pct) || 0,
       // null when that member keeps their amounts private
+      avatarUrl: r.avatar_url || '',
       eliminated: r.eliminated === null ? null : Number(r.eliminated),
       currentDebt: r.current_debt === null ? null : Number(r.current_debt),
       monthPaid: r.month_paid === null ? null : Number(r.month_paid),
@@ -92,4 +118,21 @@ export const clubMemberIds = async (clubId) => {
   const { data, error } = await supabase.from('club_members').select('user_id').eq('club_id', clubId)
   if (error) return []
   return (data || []).map((r) => r.user_id)
+}
+
+// ── Club chat ──────────────────────────────────────────────────────────────
+export const fetchChat = async (clubId) => {
+  if (!supabase || !clubId) return { messages: [], ready: false }
+  const { data, error } = await supabase.rpc('club_chat', { club: clubId, limit_count: 100 })
+  if (error) return { messages: [], ready: !notReady(error) }
+  return { ready: true, messages: data || [] }
+}
+
+export const sendMessage = async (clubId, userId, body) => {
+  if (!supabase || !clubId || !userId) return { error: 'Not signed in' }
+  const text = body.trim()
+  if (!text) return { error: null }
+  const { error } = await supabase.from('club_messages').insert({ club_id: clubId, user_id: userId, body: text })
+  if (error) return { error: notReady(error) ?? error.message }
+  return { error: null }
 }
