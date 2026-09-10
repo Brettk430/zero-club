@@ -1,9 +1,9 @@
 // Bump to retire every previously cached response in one go.
-const CACHE_VERSION = 'zero-club-v2';
+const CACHE_VERSION = 'zero-club-v3';
 
 // Only the offline fallback is precached. The app shell deliberately is not:
 // see the navigation strategy below.
-const OFFLINE_URLS = ['/index.html', '/favicon.svg', '/manifest.json'];
+const OFFLINE_URLS = ['/index.html', '/favicon.svg', '/brand/zero-club-mark-on-deep.svg', '/manifest.json'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

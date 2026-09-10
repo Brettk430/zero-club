@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchChat, sendMessage } from '../lib/clubs.js'
 import Avatar from './Avatar.jsx'
+import Logo from './Logo.jsx'
 
 const stamp = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
@@ -74,7 +75,7 @@ const ClubChat = ({ clubId, meId }) => {
           </div>
         ) : messages.length === 0 ? (
           <div className="py-10 text-center">
-            <p className="text-4xl font-black tracking-tighter text-slate-200 dark:text-slate-800">0</p>
+            <Logo variant="plain" size={44} className="mx-auto opacity-70" />
             <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">No messages yet</p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Say something — this room is just your club.</p>
           </div>

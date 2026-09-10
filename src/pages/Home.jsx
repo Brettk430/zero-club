@@ -1,5 +1,6 @@
 import { useZero } from '../context/ZeroContext.jsx'
 import ZeroDashboard from '../components/ZeroDashboard.jsx'
+import Logo from '../components/Logo.jsx'
 
 // Signed-in members with a number to chase get the dashboard. Everyone else
 // gets the pitch — which is one sentence long.
@@ -17,7 +18,7 @@ const Home = () => {
   return (
     <section>
       <div className="bg-slate-950 px-5 py-20 text-center text-white sm:py-28">
-        <p className="text-[9rem] font-black leading-[0.8] tracking-tighter sm:text-[14rem]">0</p>
+        <Logo variant="plain" size={200} className="mx-auto sm:!h-[260px] sm:!w-[260px]" />
         <h1 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl">Get to $0. Together.</h1>
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-slate-400 sm:text-lg">
           The social club for becoming debt-free. Track your journey to zero, and take your people with you.
@@ -25,7 +26,7 @@ const Home = () => {
         <button
           type="button"
           onClick={openOnboarding}
-          className="mt-10 rounded-full bg-white px-10 py-4 text-sm font-bold uppercase tracking-wide text-slate-950 transition hover:bg-slate-200"
+          className="mt-10 rounded-full px-10 py-4 text-sm font-bold uppercase tracking-wide bg-lime text-deep transition hover:bg-[#D9FF7A]"
         >
           Find your zero
         </button>

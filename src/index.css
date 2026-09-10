@@ -3,15 +3,85 @@
 /* Class-based dark mode: applies dark: when .dark is on <html> */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Brand tokens, from web/zero-club-tokens.css in the asset package. Declared
+   through Tailwind's @theme so they exist both as CSS variables and as
+   utilities (bg-deep, text-lime, font-display…). */
+@theme {
+  --color-deep: #062E24;
+  --color-forest: #155A46;
+  --color-lime: #C6FF3D;
+  --color-off-white: #F5F5EF;
+  --color-charcoal: #181C1A;
+  --color-cool-gray: #8A8F98;
+
+  /* Tints derived from the six brand colours, for borders, hovers and the
+     quieter surfaces an interface needs between "deep" and "off white". */
+  --color-deep-950: #041F18;
+  --color-deep-700: #0A3B2E;
+  --color-deep-600: #0E4838;
+  --color-ink-700: #222825;
+  --color-ink-600: #2E3733;
+  --color-mist: #E8E9E2;
+  --color-mist-dark: #D8DAD0;
+
+  /* The app was built on Tailwind's slate and emerald. Rather than rewrite ~750
+     colour classes by hand — and risk breaking the light/dark pairings that are
+     already tuned — those two ramps are re-pointed at the brand here. Every
+     existing class keeps its position in the ramp and inherits the new hue.
+
+     slate becomes a green-tinted neutral landing on the brand colours at the
+     stops that carry the most weight: off-white, charcoal, deep forest. */
+  --color-slate-50:  #F5F5EF;
+  --color-slate-100: #E8E9E2;
+  --color-slate-200: #D8DAD0;
+  --color-slate-300: #BCC0B6;
+  --color-slate-400: #939A92;
+  --color-slate-500: #6E7872;
+  --color-slate-600: #55605A;
+  --color-slate-700: #2E3733;
+  --color-slate-800: #222825;
+  --color-slate-900: #181C1A;
+  --color-slate-950: #062E24;
+
+  /* emerald carried "progress". Lime is the signature accent but it is a light
+     colour: it reads on deep and charcoal, and disappears on off-white. So the
+     light end of this ramp is lime for dark surfaces, and the dark end is
+     forest green — which is what accent *text* on an off-white page has to be
+     to stay legible. The two halves are used in disjoint contexts. */
+  --color-emerald-50:  #EEFBD9;
+  --color-emerald-100: #DEF7B6;
+  --color-emerald-200: #D2FF8E;
+  --color-emerald-300: #D9FF7A;
+  --color-emerald-400: #C6FF3D;
+  --color-emerald-500: #A8E62E;
+  --color-emerald-600: #155A46;
+  --color-emerald-700: #124E3C;
+  --color-emerald-800: #0E4838;
+  --color-emerald-900: #0A3B2E;
+  --color-emerald-950: #041F18;
+
+  /* Blue and yellow predate the identity. Pointed at forest and lime so the
+     handful of remaining uses stop reading as another brand. */
+  --color-blue-100: #DEF7B6;
+  --color-blue-400: #155A46;
+  --color-blue-600: #155A46;
+  --color-blue-700: #124E3C;
+  --color-yellow-300: #D9FF7A;
+  --color-yellow-400: #C6FF3D;
+  --color-yellow-500: #A8E62E;
+
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
 /* These are defaults, so they belong in @layer base. Unlayered CSS beats
    anything inside a cascade layer regardless of specificity, and Tailwind
    emits its utilities in layers — so an unlayered `a { color: inherit }`
-   silently overrode every text-* class on every link in the app, producing
-   e.g. dark text on the dark "Start your journey" button. */
+   silently overrode every text-* class on every link in the app. */
 @layer base {
   :root {
     color-scheme: light;
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-body);
   }
 
   .dark {
@@ -21,13 +91,19 @@
   body {
     margin: 0;
     min-height: 100%;
-    background: #F1F5F9;
-    color: #0F172A;
+    background: var(--color-off-white);
+    color: var(--color-charcoal);
   }
 
   .dark body {
-    background: #0B1120;
-    color: #F9FAFB;
+    /* A shade below the deep-forest cards, so their edges still read. Matched
+       to the page they sit on, they vanished. */
+    background: var(--color-deep-950);
+    color: var(--color-off-white);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
   }
 
   * {
@@ -44,6 +120,14 @@
   textarea,
   select {
     font: inherit;
+  }
+
+  /* Lime is the signature accent and it is a *light* colour: as text it only
+     works on deep or charcoal, never on off-white. Selection follows the same
+     rule — dark ink on lime, not the reverse. */
+  ::selection {
+    background: var(--color-lime);
+    color: var(--color-deep);
   }
 }
 

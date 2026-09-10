@@ -1,36 +1,39 @@
-// Fading ring: 8 arc segments clockwise from 12 o'clock, each lighter than the last.
-// The "zero" point is at the top where the solid meets the transparent — debt gone.
-const arcs = [
-  { d: 'M16 4A12 12 0 0 1 24.49 7.51', o: 1 },
-  { d: 'M24.49 7.51A12 12 0 0 1 28 16', o: 0.82 },
-  { d: 'M28 16A12 12 0 0 1 24.49 24.49', o: 0.65 },
-  { d: 'M24.49 24.49A12 12 0 0 1 16 28', o: 0.48 },
-  { d: 'M16 28A12 12 0 0 1 7.51 24.49', o: 0.33 },
-  { d: 'M7.51 24.49A12 12 0 0 1 4 16', o: 0.2 },
-  { d: 'M4 16A12 12 0 0 1 7.51 7.51', o: 0.1 },
-  { d: 'M7.51 7.51A12 12 0 0 1 16 4', o: 0.03 },
-]
+// The mark ships as SVG masters in /public/brand and is rendered from those
+// files directly — never redrawn in CSS or approximated with a text "0", per
+// the brand package's implementation notes.
+//
+// variant:
+//   tile  — the mark on its own deep rounded square. Self-contained, so it
+//           holds up on any background; this is the app-icon reading.
+//   plain — lime on transparent, for surfaces that are already deep.
+//   light — charcoal on an off-white square, for lime-heavy surfaces.
+const SOURCES = {
+  tile: '/brand/zero-club-mark-on-deep.svg',
+  plain: '/brand/zero-club-mark.svg',
+  light: '/brand/zero-club-mark-dark.svg',
+}
 
-const Logo = ({ size = 32 }) => (
-  <svg
+const Logo = ({ size = 32, variant = 'tile', className = '' }) => (
+  <img
+    src={SOURCES[variant] ?? SOURCES.tile}
+    alt=""
+    aria-hidden="true"
     width={size}
     height={size}
-    viewBox="0 0 32 32"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    {arcs.map(({ d, o }, i) => (
-      <path key={i} d={d} stroke="#2563EB" strokeWidth="3.2" strokeLinecap="round" opacity={o} />
-    ))}
-    <path
-      d="M11 13H21L11 19H21"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
+    className={`shrink-0 ${className}`}
+    style={{ width: size, height: size }}
+  />
+)
+
+// Mark plus "ZERO CLUB" lockup, for places with room to breathe.
+export const Wordmark = ({ height = 40, onDark = false, className = '' }) => (
+  <img
+    src={onDark ? '/brand/zero-club-wordmark-white.svg' : '/brand/zero-club-wordmark.svg'}
+    alt="Zero Club"
+    height={height}
+    className={className}
+    style={{ height, width: 'auto' }}
+  />
 )
 
 export default Logo

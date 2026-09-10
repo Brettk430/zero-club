@@ -165,7 +165,7 @@ const LogPaymentSheet = ({ onClose }) => {
               <button
                 type="submit"
                 disabled={!value}
-                className="w-full rounded-full bg-white py-4 text-sm font-bold uppercase tracking-wide text-slate-950 transition hover:bg-slate-200 disabled:opacity-30"
+                className="w-full rounded-full py-4 text-sm font-bold uppercase tracking-wide disabled:opacity-30 bg-lime text-deep transition hover:bg-[#D9FF7A]"
               >
                 Eliminate {value > 0 ? money(value) : ''}
               </button>

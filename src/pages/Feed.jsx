@@ -5,6 +5,7 @@ import { useZero } from '../context/ZeroContext.jsx'
 import { fetchFeed, toggleReaction, addComment, timeAgo } from '../lib/feed.js'
 import { myClubs, clubMemberIds } from '../lib/clubs.js'
 import { money } from '../lib/zero.js'
+import Logo from '../components/Logo.jsx'
 
 // Every payment deserves a crowd. Positive-only by design: reactions are
 // applause, comments are encouragement, and nothing here ranks anyone.
@@ -250,7 +251,7 @@ const Feed = () => {
           </div>
         ) : posts.length === 0 ? (
           <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
-            <p className="text-5xl font-black tracking-tighter text-slate-200 dark:text-slate-800">0</p>
+            <Logo variant="plain" size={56} className="mx-auto opacity-70" />
             <p className="mt-3 text-lg font-black text-slate-900 dark:text-slate-100">Quiet in here — for now.</p>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               {scope === 'all'

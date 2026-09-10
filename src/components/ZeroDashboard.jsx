@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useZero } from '../context/ZeroContext.jsx'
 import { money, monthLabel, monthlyPaceNeeded, paidInMonth, distanceToNext, earnedMilestones } from '../lib/zero.js'
 import LogPaymentSheet from './LogPaymentSheet.jsx'
+import Logo from './Logo.jsx'
 
 // One screen, one idea: this number is going to zero.
 
@@ -43,7 +44,7 @@ const ZeroDashboard = () => {
       <div className="overflow-hidden rounded-[28px] bg-slate-950 p-6 text-white shadow-xl sm:p-9">
         {done ? (
           <div className="py-6 text-center">
-            <p className="text-[7rem] font-black leading-none tracking-tighter sm:text-[9rem]">0</p>
+            <Logo variant="plain" size={128} className="mx-auto" />
             <p className="mt-2 text-xl font-black uppercase tracking-[0.2em] text-emerald-400">Debt free</p>
             <p className="mt-3 text-sm text-slate-400">You eliminated {money(startingDebt)}. Welcome to the club.</p>
           </div>
@@ -54,7 +55,7 @@ const ZeroDashboard = () => {
 
             {/* Toward zero, left to right, with the destination named */}
             <div className="mt-7">
-              <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-deep-600">
                 <div
                   className="h-full rounded-full bg-emerald-500 transition-[width] duration-1000 ease-out"
                   style={{ width: `${Math.max(progressPct > 0 ? 2 : 0, progressPct)}%` }}
@@ -77,7 +78,7 @@ const ZeroDashboard = () => {
 
         <button
           onClick={() => setLogging(true)}
-          className="mt-7 w-full rounded-full bg-white py-4 text-sm font-bold uppercase tracking-wide text-slate-950 transition hover:bg-slate-200"
+          className="mt-7 w-full rounded-full py-4 text-sm font-bold uppercase tracking-wide bg-lime text-deep transition hover:bg-[#D9FF7A]"
         >
           + Log payment
         </button>

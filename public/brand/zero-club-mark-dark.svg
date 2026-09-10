@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Zero Club">
+<rect width="256" height="256" rx="52" fill="#F5F5EF"/>
+<ellipse cx="128" cy="128" rx="69" ry="91" fill="none" stroke="#181C1A" stroke-width="27"/>
+<path d="M78 184 L178 72" fill="none" stroke="#181C1A" stroke-width="27" stroke-linecap="round"/>
+</svg>

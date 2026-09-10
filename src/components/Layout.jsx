@@ -32,9 +32,12 @@ const navItems = [
     icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h8m-8 4h5M6.75 3.75h10.5a3 3 0 013 3v9a3 3 0 01-3 3H9l-4.5 3v-3a3 3 0 01-1.5-2.6v-9.4a3 3 0 013-3z" /></svg>),
   },
   {
-    name: 'You',
-    path: '/profile',
-    icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a7.5 7.5 0 1115 0v.75h-15v-.75z" /></svg>),
+    // Profile lives on the header avatar, so this slot goes to the collection —
+    // the brand brief lists Milestones as a top-level destination and a sixth
+    // item would not fit a phone's bar.
+    name: 'Badges',
+    path: '/milestones',
+    icon: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75l-3-1.5-3 1.5V14.5h6v4.25zM12 15a6 6 0 100-12 6 6 0 000 12z" /></svg>),
   },
 ]
 
@@ -122,7 +125,8 @@ const BottomNav = () => {
                 to={item.path}
                 className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 transition-colors"
               >
-                <span className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md transition-all ${isActive ? 'bg-emerald-600 text-white' : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'}`}>
+                {/* The core action carries the signature colour. */}
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-lime text-deep shadow-md transition-all">
                   {item.icon}
                 </span>
                 <span className={`text-[10px] font-bold ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -170,7 +174,7 @@ const Layout = () => {
           <Link to="/" className="flex items-center gap-3">
             <Logo size={32} />
             <div>
-              <p className="text-sm font-black uppercase leading-none tracking-[0.14em] text-slate-900 dark:text-slate-100" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Zero Club</p>
+              <p className="text-sm font-black uppercase leading-none tracking-[0.14em] text-slate-900 dark:text-slate-100" style={{ fontFamily: "Sora, sans-serif" }}>Zero Club</p>
               <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-300">Get to $0. Together.</p>
             </div>
           </Link>
@@ -184,7 +188,7 @@ const Layout = () => {
                     <NavLink
                       key={item.path}
                       to={item.path}
-                      className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                      className="rounded-full bg-lime px-4 py-2 text-sm font-bold text-deep transition hover:bg-[#D9FF7A]"
                     >
                       + Log payment
                     </NavLink>

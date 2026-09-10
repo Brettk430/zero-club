@@ -92,7 +92,7 @@ const Profile = () => {
             <input type="file" accept="image/*" onChange={pickPhoto} disabled={photoBusy} className="sr-only" />
           </label>
           <div className="min-w-0">
-            <h1 className="truncate text-3xl font-black tracking-tight">{handle}</h1>
+            <h1 className="break-words text-2xl font-black leading-tight tracking-tight sm:text-3xl">{handle}</h1>
             {avatarUrl && (
               <button onClick={clearPhoto} disabled={photoBusy} className="mt-1 text-xs font-semibold text-slate-500 underline underline-offset-4 transition hover:text-slate-300">
                 Remove photo
@@ -116,7 +116,7 @@ const Profile = () => {
           </p>
         )}
 
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-800">
+        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-deep-600">
           <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-1000" style={{ width: `${Math.max(progressPct > 0 ? 2 : 0, progressPct)}%` }} />
         </div>
 

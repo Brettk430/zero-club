@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useZero } from '../context/ZeroContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import AuthModal from './AuthModal.jsx'
+import Logo from './Logo.jsx'
 import { money } from '../lib/zero.js'
 
 // Two questions and you're in. Anything else asked here is a reason to leave.
@@ -45,7 +46,7 @@ const StepAmount = ({ value, onChange, onNext }) => {
         type="button"
         disabled={!Number(digits)}
         onClick={onNext}
-        className="mt-12 w-full rounded-full bg-white py-4 text-sm font-bold text-slate-950 transition hover:bg-slate-200 disabled:opacity-30"
+        className="mt-12 w-full rounded-full py-4 text-sm font-bold disabled:opacity-30 bg-lime text-deep transition hover:bg-[#D9FF7A]"
       >
         Continue
       </button>
@@ -112,7 +113,7 @@ const StepDate = ({ total, value, onChange, onNext, onBack }) => {
         type="button"
         disabled={monthsAway <= 0}
         onClick={onNext}
-        className="mt-8 w-full rounded-full bg-white py-4 text-sm font-bold text-slate-950 transition hover:bg-slate-200 disabled:opacity-30"
+        className="mt-8 w-full rounded-full py-4 text-sm font-bold disabled:opacity-30 bg-lime text-deep transition hover:bg-[#D9FF7A]"
       >
         Continue
       </button>
@@ -125,7 +126,7 @@ const StepDate = ({ total, value, onChange, onNext, onBack }) => {
 
 const StepWelcome = ({ total, onFinish }) => (
   <div className="w-full text-center">
-    <p className="text-[10rem] font-black leading-none tracking-tighter text-white sm:text-[12rem]">0</p>
+    <Logo variant="plain" size={168} className="mx-auto" />
     <h1 className="mt-2 text-2xl font-black uppercase tracking-[0.2em] text-white">Welcome to Zero Club</h1>
     <p className="mt-6 text-lg leading-8 text-slate-400">
       You're <span className="font-bold text-emerald-400">{money(total)}</span> away from zero.
@@ -134,7 +135,7 @@ const StepWelcome = ({ total, onFinish }) => (
     <button
       type="button"
       onClick={onFinish}
-      className="mt-10 w-full rounded-full bg-emerald-500 py-4 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
+      className="mt-10 w-full rounded-full py-4 text-sm font-bold bg-lime text-deep transition hover:bg-[#D9FF7A]"
     >
       Start my journey
     </button>
@@ -183,7 +184,7 @@ const ZeroOnboarding = ({ onComplete }) => {
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-950">
       <div className="flex min-h-full flex-col px-6 py-10 sm:px-8">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-black text-slate-950">0</span>
+          <Logo variant="plain" size={26} />
           <span className="text-sm font-bold uppercase tracking-[0.2em] text-white">Zero Club</span>
         </div>
 

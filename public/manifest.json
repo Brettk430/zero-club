@@ -1,47 +1,80 @@
 {
   "name": "Zero Club - Debt Freedom",
   "short_name": "Zero Club",
-  "description": "Track debt payoff, build accountability streaks, and reach zero debt faster with AI coaching and community support.",
+  "description": "Get to $0. Together. Track your journey to debt-free, join a club, and celebrate every milestone.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#0f172a",
-  "categories": ["finance", "productivity"],
+  "background_color": "#F5F5EF",
+  "theme_color": "#062E24",
+  "categories": [
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
+      "src": "/brand/icons/zero-club-icon-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
+      "src": "/brand/icons/zero-club-icon-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icons/zero-club-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icons/zero-club-icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icons/zero-club-icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icons/zero-club-icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/icons/zero-club-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/favicon.svg",
-      "sizes": "540x720",
-      "type": "image/svg+xml",
-      "form_factor": "narrow"
+      "src": "/brand/og.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ],
   "shortcuts": [
     {
       "name": "Log Payment",
-      "short_name": "Commit",
-      "description": "Quickly log a debt payment",
+      "short_name": "Log",
+      "description": "Log a payment toward zero",
       "url": "/?log=1",
       "icons": [
         {
-          "src": "/favicon.svg",
+          "src": "/brand/icons/zero-club-icon-192.png",
           "sizes": "192x192",
-          "type": "image/svg+xml"
+          "type": "image/png"
         }
       ]
     }

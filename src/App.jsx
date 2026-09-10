@@ -10,6 +10,7 @@ import { ThemeProvider } from './context/ThemeContext.jsx'
 import { recordVisit } from './lib/payments.js'
 
 const Feed = lazy(() => import('./pages/Feed.jsx'))
+const Milestones = lazy(() => import('./pages/Milestones.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const Privacy = lazy(() => import('./pages/Privacy.jsx'))
 
@@ -45,6 +46,7 @@ function AppContent() {
             <Route index element={<Home />} />
             <Route path="clubs" element={<Clubs />} />
             <Route path="feed" element={<Feed />} />
+            <Route path="milestones" element={<Milestones />} />
             <Route path="profile" element={<Profile />} />
             <Route path="privacy" element={<Privacy />} />
             {/* Routes the rebuild retired */}

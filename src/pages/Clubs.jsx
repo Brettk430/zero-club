@@ -8,13 +8,14 @@ import {
 import { money } from '../lib/zero.js'
 import { track } from '../lib/analytics.js'
 import Avatar from '../components/Avatar.jsx'
+import Logo from '../components/Logo.jsx'
 import ClubChat from '../components/ClubChat.jsx'
 
 // The social half. Rankings are by percentage, never by how much someone owes —
 // a $2k member and a $200k member stand on the same ladder.
 
 const Bar = ({ pct, highlight }) => (
-  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+  <div className="h-1.5 w-full overflow-hidden rounded-full bg-mist dark:bg-deep-600">
     <div
       className={`h-full rounded-full transition-[width] duration-700 ${highlight ? 'bg-emerald-500' : 'bg-slate-900 dark:bg-slate-300'}`}
       style={{ width: `${Math.max(pct > 0 ? 2 : 0, Math.min(100, pct))}%` }}
@@ -245,7 +246,7 @@ const Clubs = () => {
   if (!user) {
     return (
       <section className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
-        <p className="text-6xl font-black text-slate-200 dark:text-slate-800">0</p>
+        <Logo variant="plain" size={64} className="mx-auto opacity-70" />
         <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-900 dark:text-white">Clubs are for members</h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Sign in to start a club, join a public one, or use an invite code.</p>
       </section>
@@ -293,7 +294,7 @@ const Clubs = () => {
                 {active.is_public ? 'Public' : 'Private'}
               </span>
             </div>
-            <button onClick={invite} className="mt-6 w-full rounded-full bg-white py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-200">
+            <button onClick={invite} className="mt-6 w-full rounded-full py-3.5 text-sm font-bold bg-lime text-deep transition hover:bg-[#D9FF7A]">
               {copied ? 'Invite copied' : 'Invite friends'}
             </button>
             <p className="mt-2.5 text-center text-xs text-slate-500">
@@ -330,7 +331,7 @@ const Clubs = () => {
         </div>
       ) : (
         <div className="mt-5 rounded-[28px] bg-slate-950 p-8 text-center text-white">
-          <p className="text-6xl font-black tracking-tighter">0</p>
+          <Logo variant="plain" size={72} className="mx-auto" />
           <h2 className="mt-3 text-xl font-black">Nobody gets there alone</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">
             Start a club with friends, or join a public one below.

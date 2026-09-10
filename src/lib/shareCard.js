@@ -13,11 +13,32 @@ const money = (n) => `$${Math.round(Number(n) || 0).toLocaleString()}`
 const fitText = (ctx, text, maxWidth, startPx, weight = 900) => {
   let size = startPx
   do {
-    ctx.font = `${weight} ${size}px system-ui, -apple-system, sans-serif`
+    ctx.font = `${weight} ${size}px Sora, system-ui, -apple-system, sans-serif`
     if (ctx.measureText(text).width <= maxWidth) break
     size -= 6
   } while (size > 40)
   return size
+}
+
+// The Zero Club mark: the ellipse and the diagonal from the SVG master,
+// scaled from its 256-unit viewBox onto the canvas.
+const drawMark = (ctx, cx, cy, size, color, alpha = 1) => {
+  const k = size / 256
+  ctx.save()
+  ctx.globalAlpha = alpha
+  ctx.strokeStyle = color
+  ctx.lineWidth = 27 * k
+  ctx.lineCap = 'round'
+
+  ctx.beginPath()
+  ctx.ellipse(cx, cy, 69 * k, 91 * k, 0, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.beginPath()
+  ctx.moveTo(cx + (78 - 128) * k, cy + (184 - 128) * k)
+  ctx.lineTo(cx + (178 - 128) * k, cy + (72 - 128) * k)
+  ctx.stroke()
+  ctx.restore()
 }
 
 const roundRect = (ctx, x, y, w, h, r) => {
@@ -36,14 +57,14 @@ export const renderShareCard = ({ amount, remaining, starting, progressPct, mile
   canvas.height = H
   const ctx = canvas.getContext('2d')
 
-  ctx.fillStyle = '#020617'
+  ctx.fillStyle = '#062E24'
   ctx.fillRect(0, 0, W, H)
 
   // The brand asset, sitting behind everything
   ctx.save()
   ctx.globalAlpha = 0.06
   ctx.fillStyle = '#ffffff'
-  ctx.font = '900 1100px system-ui, -apple-system, "Helvetica Neue", sans-serif'
+  ctx.font = '900 1100px Sora, Sora, system-ui, -apple-system, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText('0', W / 2, H / 2)
@@ -51,13 +72,13 @@ export const renderShareCard = ({ amount, remaining, starting, progressPct, mile
 
   ctx.textAlign = 'center'
 
-  ctx.fillStyle = '#64748b'
-  ctx.font = '700 34px system-ui, -apple-system, sans-serif'
+  ctx.fillStyle = '#8A8F98'
+  ctx.font = '700 34px Sora, system-ui, -apple-system, sans-serif'
   ctx.letterSpacing = '10px'
   ctx.fillText(milestoneLabel ? 'MILESTONE' : 'JUST ELIMINATED', W / 2, 620)
 
   ctx.letterSpacing = '0px'
-  ctx.fillStyle = '#34d399'
+  ctx.fillStyle = '#C6FF3D'
   // A milestone is the headline when there is one; the payment that got you
   // there is the smaller story.
   if (milestoneLabel) {
@@ -70,39 +91,39 @@ export const renderShareCard = ({ amount, remaining, starting, progressPct, mile
     ctx.fillText(value, W / 2, 790)
   }
 
-  ctx.fillStyle = '#ffffff'
-  ctx.font = '800 62px system-ui, -apple-system, sans-serif'
+  ctx.fillStyle = '#F5F5EF'
+  ctx.font = '800 62px Sora, system-ui, -apple-system, sans-serif'
   ctx.fillText(`${money(remaining)}  →  $0`, W / 2, 910)
 
   // Progress toward zero
   const barW = 720
   const barX = (W - barW) / 2
   const barY = 1010
-  ctx.fillStyle = '#1e293b'
+  ctx.fillStyle = '#0E4838'
   roundRect(ctx, barX, barY, barW, 22, 11)
   ctx.fill()
   const filled = Math.max(progressPct > 0 ? 2 : 0, Math.min(100, progressPct)) / 100
-  ctx.fillStyle = '#34d399'
+  ctx.fillStyle = '#C6FF3D'
   roundRect(ctx, barX, barY, barW * filled, 22, 11)
   ctx.fill()
 
-  ctx.fillStyle = '#94a3b8'
-  ctx.font = '700 40px system-ui, -apple-system, sans-serif'
+  ctx.fillStyle = '#F5F5EF'
+  ctx.font = '700 40px Sora, system-ui, -apple-system, sans-serif'
   ctx.fillText(`${progressPct.toFixed(1)}% closer to ZERO`, W / 2, 1110)
 
   if (starting > 0) {
-    ctx.fillStyle = '#475569'
-    ctx.font = '600 30px system-ui, -apple-system, sans-serif'
+    ctx.fillStyle = '#8A8F98'
+    ctx.font = '600 30px Sora, system-ui, -apple-system, sans-serif'
     ctx.fillText(`Started at ${money(starting)}`, W / 2, 1168)
   }
 
-  ctx.fillStyle = '#ffffff'
-  ctx.font = '900 44px system-ui, -apple-system, sans-serif'
+  ctx.fillStyle = '#F5F5EF'
+  ctx.font = '900 44px Sora, system-ui, -apple-system, sans-serif'
   ctx.letterSpacing = '14px'
   ctx.fillText('ZERO CLUB', W / 2, 1540)
   ctx.letterSpacing = '0px'
-  ctx.fillStyle = '#475569'
-  ctx.font = '600 28px system-ui, -apple-system, sans-serif'
+  ctx.fillStyle = '#8A8F98'
+  ctx.font = '600 28px Sora, system-ui, -apple-system, sans-serif'
   ctx.fillText('Get to $0. Together.', W / 2, 1596)
 
   return canvas
