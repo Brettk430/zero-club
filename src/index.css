@@ -17,6 +17,7 @@
   /* Tints derived from the six brand colours, for borders, hovers and the
      quieter surfaces an interface needs between "deep" and "off white". */
   --color-deep-950: #041F18;
+  --color-night: #04140F;
   --color-deep-700: #0A3B2E;
   --color-deep-600: #0E4838;
   --color-ink-700: #222825;
@@ -96,10 +97,36 @@
   }
 
   .dark body {
-    /* A shade below the deep-forest cards, so their edges still read. Matched
-       to the page they sit on, they vanished. */
-    background: var(--color-deep-950);
+    /* Near-black green: a shade below the deep-forest cards, so their edges
+       still read. Matched to the page they sit on, they vanished. */
+    background: var(--color-night);
     color: var(--color-off-white);
+  }
+
+  /* Contour texture over the ground. Fixed rather than scrolling so it behaves
+     like the surface the app sits on instead of a pattern moving past. Kept low
+     enough to register as grain rather than decoration, and skipped entirely
+     for anyone who has asked for reduced motion or high contrast. */
+  .dark body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url('/brand/topo.svg');
+    background-size: 620px;
+    opacity: 0.09;
+  }
+
+  @media (prefers-contrast: more) {
+    .dark body::before { display: none; }
+  }
+
+  /* The texture is fixed, so content has to sit in its own stacking context
+     above it. */
+  #root {
+    position: relative;
+    z-index: 1;
   }
 
   h1, h2, h3 {
