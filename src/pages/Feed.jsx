@@ -73,7 +73,9 @@ const PostCard = ({ post, user, onReact, onComment }) => {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-            <span className="font-bold text-slate-900 dark:text-white">{post.username}</span>{' '}
+            <Link to={`/u/${encodeURIComponent(post.username)}`} className="font-bold text-slate-900 hover:underline underline-offset-4 dark:text-white">
+              {post.username}
+            </Link>{' '}
             <PostBody post={post} />
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeAgo(post.created_at)}</p>

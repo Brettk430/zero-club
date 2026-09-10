@@ -4,6 +4,8 @@ import Layout from './components/Layout.jsx'
 import ZeroOnboarding from './components/ZeroOnboarding.jsx'
 import Home from './pages/Home.jsx'
 import Clubs from './pages/Clubs.jsx'
+const ClubDetail = lazy(() => import('./pages/ClubDetail.jsx'))
+const Member = lazy(() => import('./pages/Member.jsx'))
 import { ZeroProvider, useZero } from './context/ZeroContext.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
@@ -45,8 +47,10 @@ function AppContent() {
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="clubs" element={<Clubs />} />
+            <Route path="clubs/:clubId" element={<ClubDetail />} />
             <Route path="feed" element={<Feed />} />
             <Route path="milestones" element={<Milestones />} />
+            <Route path="u/:handle" element={<Member />} />
             <Route path="profile" element={<Profile />} />
             <Route path="privacy" element={<Privacy />} />
             {/* Routes the rebuild retired */}
