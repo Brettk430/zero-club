@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useTheme } from '../context/ThemeContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
 import { myClubs } from '../lib/clubs.js'
 import { earnedMilestones, MILESTONES, money, monthLabel } from '../lib/zero.js'
@@ -13,6 +14,7 @@ import DeleteAccount from '../components/DeleteAccount.jsx'
 
 const Profile = () => {
   const { user, signOut } = useAuth()
+  const { theme, toggle } = useTheme()
   const {
     startingDebt, currentDebt, goalDate, eliminated, progressPct,
     streakMonths, handle, showAmounts, avatarUrl, payments, updateIdentity, restateBalance, resetJourney,
@@ -210,6 +212,28 @@ const Profile = () => {
           </button>
         )}
         {saved && <p className="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">Saved.</p>}
+
+        {/* Appearance lives here rather than in the header: it is set once and
+            then forgotten, which is not worth a permanent slot in the chrome. */}
+        <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Appearance</p>
+          <div className="mt-2.5 flex rounded-full border border-slate-200 bg-slate-50 p-0.5 text-xs font-bold dark:border-slate-700 dark:bg-slate-800">
+            {[['dark', 'Dark'], ['light', 'Light']].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => { if (theme !== id) toggle() }}
+                className={`flex-1 rounded-full py-2.5 transition ${
+                  theme === id
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
+                    : 'text-slate-500 dark:text-slate-400'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Privacy: percentages always show, dollars are the member's call */}
         <label className="mt-4 flex items-start gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">

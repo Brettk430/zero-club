@@ -6,7 +6,6 @@ import InstallPrompt from './InstallPrompt.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
 import Avatar from './Avatar.jsx'
-import { useTheme } from '../context/ThemeContext.jsx'
 
 const navItems = [
   {
@@ -41,17 +40,6 @@ const navItems = [
   },
 ]
 
-const SunIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-  </svg>
-)
-
-const MoonIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-  </svg>
-)
 
 const UserMenu = () => {
   const { signOut } = useAuth()
@@ -159,7 +147,6 @@ const BottomNav = () => {
 
 const Layout = () => {
   const { user, loading } = useAuth()
-  const { theme, toggle } = useTheme()
   const [showAuth, setShowAuth] = useState(false)
 
   return (
@@ -211,14 +198,6 @@ const Layout = () => {
                   )
               ))}
             </nav>
-
-            <button
-              onClick={toggle}
-              className="rounded-full border border-slate-200 bg-white p-2 text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-              aria-label="Toggle dark mode"
-            >
-              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
-            </button>
 
             {!loading && (
               user

@@ -33,7 +33,7 @@
      slate becomes a green-tinted neutral landing on the brand colours at the
      stops that carry the most weight: off-white, charcoal, deep forest. */
   --color-slate-50:  #F5F5EF;
-  --color-slate-100: #E8E9E2;
+  --color-slate-100: #E4E7DB;
   --color-slate-200: #D8DAD0;
   --color-slate-300: #BCC0B6;
   --color-slate-400: #939A92;
@@ -92,7 +92,9 @@
   body {
     margin: 0;
     min-height: 100%;
-    background: var(--color-off-white);
+    /* A shade under the off-white the cards use, so white panels read as
+       panels. Matched exactly, the whole page flattened into one sheet. */
+    background: #EFF1E8;
     color: var(--color-charcoal);
   }
 

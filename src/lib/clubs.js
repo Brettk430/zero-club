@@ -74,11 +74,14 @@ export const joinClub = async (code) => {
 // never anybody's numbers.
 export const discoverClubs = async (search = '', category = null) => {
   if (!supabase) return { clubs: [], ready: false }
-  const { data, error } = await supabase.rpc('discover_clubs', {
+  let { data, error } = await supabase.rpc('discover_clubs', {
     search: search || null,
     category_filter: category || null,
     limit_count: 30,
   })
+  if (missingFunction(error)) {
+    ({ data, error } = await supabase.rpc('discover_clubs', { search: search || null, limit_count: 30 }))
+  }
   if (error) return { clubs: [], ready: !notReady(error) }
   return {
     ready: true,
