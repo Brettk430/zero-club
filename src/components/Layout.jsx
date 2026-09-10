@@ -203,13 +203,27 @@ const Layout = () => {
               user
                 ? <UserMenu />
                 : (
-                  <button
-                    data-auth-trigger
-                    onClick={() => setShowAuth(true)}
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                  >
-                    Sign in
-                  </button>
+                  <>
+                    {/* Profile lives behind the avatar, and appearance lives in
+                        Profile — so without this a signed-out visitor has no
+                        route to either. */}
+                    <Link
+                      to="/profile"
+                      aria-label="Settings"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4.5 w-4.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a7.5 7.5 0 1115 0v.75h-15v-.75z" />
+                      </svg>
+                    </Link>
+                    <button
+                      data-auth-trigger
+                      onClick={() => setShowAuth(true)}
+                      className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                    >
+                      Sign in
+                    </button>
+                  </>
                 )
             )}
           </div>
