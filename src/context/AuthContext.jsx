@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
+import { Capacitor } from '@capacitor/core'
 import { identify, reset, track } from '../lib/analytics.js'
 
 const AuthContext = createContext(null)
@@ -46,6 +47,21 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
+  // Completes an OAuth round trip in the native app: the provider hands control
+  // back through com.zeroclub.app://auth-callback carrying the code to exchange.
+  useEffect(() => {
+    if (!supabase || !Capacitor.isNativePlatform()) return
+    let remove
+    import('@capacitor/app').then(({ App }) => {
+      App.addListener('appUrlOpen', async ({ url }) => {
+        if (!url?.includes('auth-callback')) return
+        const code = new URL(url.replace('com.zeroclub.app://', 'https://x/')).searchParams.get('code')
+        if (code) await supabase.auth.exchangeCodeForSession(code)
+      }).then((h) => { remove = () => h.remove() })
+    })
+    return () => { if (remove) remove() }
+  }, [])
+
   const signIn = async (email) => {
     if (!supabase) return { error: new Error('Supabase not configured') }
     return supabase.auth.signInWithOtp({
@@ -86,13 +102,25 @@ export const AuthProvider = ({ children }) => {
     return supabase.auth.updateUser({ password })
   }
 
-  const signInWithGoogle = async () => {
+  // In the native shell the browser cannot redirect back to a web origin, so
+  // OAuth returns through the app's own URL scheme and is completed by the
+  // deep-link listener below. On the web this stays an ordinary redirect.
+  const oauthRedirect = () =>
+    Capacitor.isNativePlatform() ? 'com.zeroclub.app://auth-callback' : window.location.origin
+
+  const signInWithProvider = async (provider) => {
     if (!supabase) return { error: new Error('Supabase not configured') }
     return supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
+      provider,
+      options: {
+        redirectTo: oauthRedirect(),
+        skipBrowserRedirect: Capacitor.isNativePlatform(),
+      },
     })
   }
+
+  const signInWithGoogle = () => signInWithProvider('google')
+  const signInWithApple = () => signInWithProvider('apple')
 
   const signOut = async () => {
     if (!supabase) return
@@ -103,7 +131,7 @@ export const AuthProvider = ({ children }) => {
   const isPro = profile?.is_pro ?? false
 
   return (
-    <AuthContext.Provider value={{ user, profile, isPro, loading, signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut, sendPasswordReset, setNewPassword, recovering, endRecovery: () => setRecovering(false) }}>
+    <AuthContext.Provider value={{ user, profile, isPro, loading, signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signInWithApple, signOut, sendPasswordReset, setNewPassword, recovering, endRecovery: () => setRecovering(false) }}>
       {children}
     </AuthContext.Provider>
   )

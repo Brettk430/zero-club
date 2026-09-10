@@ -10,7 +10,7 @@ const friendlyError = (message) => {
     return "Can't reach the server right now. Check your connection and try again in a minute."
   }
   if (/provider is not enabled|unsupported provider/i.test(message || '')) {
-    return 'Google sign-in isn’t available yet — use your email and a password for now.'
+    return 'That sign-in option isn’t switched on yet — use your email and a password for now.'
   }
   if (/invalid login credentials/i.test(message || '')) {
     return "That email and password don't match. Try again, or reset your password below."
@@ -50,6 +50,12 @@ const PasswordField = ({ value, onChange, placeholder, autoComplete, show, onTog
   </div>
 )
 
+const AppleIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor" aria-hidden="true">
+    <path d="M17.05 12.77c.03 2.86 2.5 3.81 2.53 3.82-.02.07-.4 1.36-1.31 2.7-.79 1.16-1.61 2.31-2.9 2.34-1.27.02-1.68-.75-3.13-.75s-1.9.73-3.1.78c-1.25.04-2.2-1.26-3-2.41-1.62-2.35-2.86-6.64-1.2-9.54.83-1.44 2.3-2.35 3.9-2.37 1.22-.03 2.38.82 3.13.82.75 0 2.16-1.02 3.64-.87.62.03 2.36.25 3.48 1.89-.09.06-2.08 1.21-2.04 3.59M14.68 4.4c.66-.8 1.11-1.92.99-3.03-.95.04-2.11.64-2.8 1.44-.62.71-1.16 1.85-1.02 2.94 1.07.08 2.16-.54 2.83-1.35" />
+  </svg>
+)
+
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
     <path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 01-2.39 3.62v3h3.87c2.26-2.09 3.57-5.17 3.57-8.81z" />
@@ -60,7 +66,7 @@ const GoogleIcon = () => (
 )
 
 const AuthModal = ({ onClose }) => {
-  const { signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, sendPasswordReset } = useAuth()
+  const { signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signInWithApple, sendPasswordReset } = useAuth()
   const [mode, setMode] = useState('signin') // signin | signup | magic | reset
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -170,10 +176,21 @@ const AuthModal = ({ onClose }) => {
           </>
         ) : (
           <>
+            {/* Apple first: it is the option that collects least, and on iOS it
+                is the one people expect to see at the top. */}
+            <button
+              type="button"
+              onClick={async () => { setError(''); const { error: err } = await signInWithApple(); if (err) setError(friendlyError(err.message)) }}
+              className="flex w-full items-center justify-center gap-2.5 rounded-full bg-slate-900 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            >
+              <AppleIcon />
+              Continue with Apple
+            </button>
+
             <button
               type="button"
               onClick={async () => { setError(''); const { error: err } = await signInWithGoogle(); if (err) setError(friendlyError(err.message)) }}
-              className="flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              className="mt-2.5 flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               <GoogleIcon />
               Continue with Google
