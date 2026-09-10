@@ -14,6 +14,7 @@ import { recordVisit } from './lib/payments.js'
 const Feed = lazy(() => import('./pages/Feed.jsx'))
 const Milestones = lazy(() => import('./pages/Milestones.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
+const ProfileEdit = lazy(() => import('./pages/ProfileEdit.jsx'))
 const Privacy = lazy(() => import('./pages/Privacy.jsx'))
 
 const PageSpinner = () => (
@@ -52,6 +53,7 @@ function AppContent() {
             <Route path="milestones" element={<Milestones />} />
             <Route path="u/:handle" element={<Member />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="profile/edit" element={<ProfileEdit />} />
             <Route path="privacy" element={<Privacy />} />
             {/* Routes the rebuild retired */}
             <Route path="community" element={<Navigate to="/feed" replace />} />
