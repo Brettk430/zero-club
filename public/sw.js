@@ -1,5 +1,5 @@
 // Bump to retire every previously cached response in one go.
-const CACHE_VERSION = 'zero-club-v5';
+const CACHE_VERSION = 'zero-club-v6';
 
 // Only the offline fallback is precached. The app shell deliberately is not:
 // see the navigation strategy below.
