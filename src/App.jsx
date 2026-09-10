@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import ZeroOnboarding from './components/ZeroOnboarding.jsx'
 import PasswordRecovery from './components/PasswordRecovery.jsx'
+import Entrance from './components/Entrance.jsx'
 import Home from './pages/Home.jsx'
 import Clubs from './pages/Clubs.jsx'
 const ClubDetail = lazy(() => import('./pages/ClubDetail.jsx'))
@@ -27,13 +28,16 @@ const PageSpinner = () => (
 )
 
 function AppContent() {
-  const { user, loading, recovering } = useAuth()
-  const { onboardingOpen, closeOnboarding, syncing } = useZero()
+  const { loading, recovering } = useAuth()
+  const { onboardingOpen, closeOnboarding } = useZero()
 
-  // Held back while auth or the first sync is still resolving, so a returning
-  // member is never asked for their total again just because their profile
-  // hasn't landed yet.
-  const showOnboarding = onboardingOpen && !loading && !(user && syncing)
+  // Held back only while auth itself resolves. It used to wait out the profile
+  // sync too — but that sync starts the instant a new member signs up at the
+  // end of onboarding, so the guard unmounted onboarding mid-flow and remounted
+  // it at step one, asking for the number they had just typed. A returning
+  // member doesn't need it any more: onboarding cannot latch open until their
+  // profile has resolved.
+  const showOnboarding = onboardingOpen && !loading
 
   useEffect(() => {
     recordVisit()
@@ -45,6 +49,7 @@ function AppContent() {
 
   return (
     <BrowserRouter>
+      <Entrance />
       {/* Sits over everything, onboarding included: a half-finished reset is
           not a state to leave someone browsing in. */}
       {recovering && <PasswordRecovery />}

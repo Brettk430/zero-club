@@ -164,13 +164,18 @@ const Layout = () => {
     <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
 
-      <header
-        className="border-b border-slate-200 bg-white/95 backdrop-blur-lg dark:border-slate-800 dark:bg-slate-950/95"
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
-      >
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+      <header className="relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        {/* The contour band. Runs up behind the status bar and the Dynamic
+            Island, carries the mark and the member's photo, then fades into the
+            ground. Behind everything, so content scrolling up covers it. */}
+        <div
+          aria-hidden="true"
+          className="topo-band pointer-events-none absolute inset-x-0 top-0"
+          style={{ height: 'calc(200px + env(safe-area-inset-top))', zIndex: -1 }}
+        />
+        <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <Link to="/" className="flex items-center gap-3">
-            <Logo size={32} />
+            <Logo size={32} variant="plain" />
             <div>
               <p className="text-sm font-black uppercase leading-none tracking-[0.14em] text-slate-900 dark:text-slate-100" style={{ fontFamily: "Sora, sans-serif" }}>Zero Club</p>
               <p className="mt-1 hidden text-xs text-slate-500 sm:block dark:text-slate-300">Get to $0. Together.</p>

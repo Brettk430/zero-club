@@ -8,7 +8,10 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
   },
   ios: {
-    contentInset: 'always',
+    // Edge to edge: the web layer runs up behind the status bar and the Dynamic
+    // Island, and the app pads itself with env(safe-area-inset-*). 'always'
+    // made iOS inset the content instead, leaving a band above the header.
+    contentInset: 'never',
     // The shell is the brand's ground colour, so overscroll and the area behind
     // the keyboard never flash white.
     backgroundColor: '#071615',

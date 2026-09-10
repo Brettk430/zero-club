@@ -105,30 +105,22 @@
     color: var(--color-off-white);
   }
 
-  /* Contour texture over the ground. Fixed rather than scrolling so it behaves
-     like the surface the app sits on instead of a pattern moving past. Kept low
-     enough to register as grain rather than decoration, and skipped entirely
-     for anyone who has asked for reduced motion or high contrast. */
-  .dark body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
+  /* The contour texture is a band behind the header, not a layer over the
+     whole page: it carries the mark and the member's photo, then fades into
+     the ground as the page goes on. Dark only — lime lines on off-white read
+     as dirt rather than terrain. */
+  .topo-band {
     background-image: url('/brand/topo.svg');
-    background-size: 620px;
-    opacity: 0.09;
+    background-size: 560px;
+    background-position: center top;
+    opacity: 0;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 0%, #000 42%, transparent 100%);
   }
+  .dark .topo-band { opacity: 0.17; }
 
   @media (prefers-contrast: more) {
-    .dark body::before { display: none; }
-  }
-
-  /* The texture is fixed, so content has to sit in its own stacking context
-     above it. */
-  #root {
-    position: relative;
-    z-index: 1;
+    .dark .topo-band { opacity: 0; }
   }
 
   h1, h2, h3 {
@@ -165,4 +157,19 @@
 @keyframes zc-fall {
   0%   { transform: translateY(-10vh) rotate(0deg);   opacity: 1; }
   100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* The launch entrance. Begins on the exact frame the native launch screen and
+   the pre-React boot mark end on, so the three read as one motion. */
+@keyframes zc-mark-in {
+  0%   { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(198, 255, 61, 0)); }
+  45%  { transform: scale(1.08); filter: drop-shadow(0 0 28px rgba(198, 255, 61, 0.45)); }
+  100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(198, 255, 61, 0)); }
+}
+@keyframes zc-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes zc-out {
+  to { opacity: 0; visibility: hidden; }
 }

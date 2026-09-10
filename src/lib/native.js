@@ -108,11 +108,23 @@ export const cancelReminders = async () => {
 // ── Shell ──────────────────────────────────────────────────────────────────
 // Called once at startup: the status bar has to be told the app is dark, and
 // the splash has to be dismissed once React has something to show.
+// Style.Dark means light text — for a dark page. The content runs up behind the
+// status bar now, so its clock and signal have to follow the theme or they
+// disappear against the page.
+export const setStatusBarTheme = async (theme) => {
+  if (!isNative()) return
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar')
+    await StatusBar.setStyle({ style: theme === 'light' ? Style.Light : Style.Dark })
+  } catch { /* ignore */ }
+}
+
 export const prepareShell = async () => {
   if (!isNative()) return
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
-    await StatusBar.setStyle({ style: Style.Dark })
+    await StatusBar.setOverlaysWebView({ overlay: true })   // edge to edge on Android too
+    await StatusBar.setStyle({ style: document.documentElement.classList.contains('dark') ? Style.Dark : Style.Light })
   } catch { /* android/web differences */ }
   try {
     const { SplashScreen } = await import('@capacitor/splash-screen')

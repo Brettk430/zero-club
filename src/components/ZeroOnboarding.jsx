@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useZero } from '../context/ZeroContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -167,16 +167,30 @@ const ZeroOnboarding = ({ onComplete }) => {
     navigate('/')
   }
 
+  // Kept in a ref rather than read off the modal's open state. The auth modal
+  // closes itself the moment sign-up succeeds, which cleared "waiting for
+  // auth" before the new session had arrived — so a check needing both at
+  // once never fired, and the member was left sitting in onboarding.
+  const finishWhenSignedIn = useRef(false)
+
   // Signing in is the last step, not a wall in the middle of it.
   const handleFinish = () => {
-    if (!user) { setAwaitingAuth(true); return }
+    if (!user) {
+      finishWhenSignedIn.current = true
+      setAwaitingAuth(true)
+      return
+    }
     finish()
   }
 
   useEffect(() => {
-    if (awaitingAuth && user) finish()
+    if (user && finishWhenSignedIn.current) {
+      finishWhenSignedIn.current = false
+      setAwaitingAuth(false)
+      finish()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [awaitingAuth, user])
+  }, [user])
 
   if (awaitingAuth) return <AuthModal onClose={() => setAwaitingAuth(false)} />
 

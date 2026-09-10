@@ -346,8 +346,13 @@ export const ZeroProvider = ({ children }) => {
     startingDebt, currentDebt, goalDate, payments, handle, showAmounts, avatarUrl, displayName,
     hasZero, cloudReady, syncing, profileResolved,
     onboardingOpen,
-    openOnboarding: () => setOnboardingRequested(true),
-    closeOnboarding: () => setOnboardingRequested(false),
+    // Reopening has to clear a previous dismissal, or the latch can never
+    // re-arm for someone who closed onboarding and wants it back.
+    openOnboarding: () => { setOnboardingDismissed(false); setOnboardingRequested(true) },
+    // The only thing that closes a latched onboarding. It used to clear
+    // `requested` instead, which the latch ignores — so onboarding, once
+    // open, could never be dismissed and "Start my journey" did nothing.
+    closeOnboarding: () => { setOnboardingDismissed(true); setOnboardingRequested(false) },
     eliminated: eliminated(startingDebt, currentDebt),
     progressPct: progressPct(startingDebt, currentDebt),
     streakMonths: paymentStreakMonths(payments),
