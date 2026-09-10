@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import ZeroOnboarding from './components/ZeroOnboarding.jsx'
+import PasswordRecovery from './components/PasswordRecovery.jsx'
 import Home from './pages/Home.jsx'
 import Clubs from './pages/Clubs.jsx'
 const ClubDetail = lazy(() => import('./pages/ClubDetail.jsx'))
@@ -24,7 +25,7 @@ const PageSpinner = () => (
 )
 
 function AppContent() {
-  const { user, loading } = useAuth()
+  const { user, loading, recovering } = useAuth()
   const { onboardingOpen, closeOnboarding, syncing } = useZero()
 
   // Held back while auth or the first sync is still resolving, so a returning
@@ -42,7 +43,10 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      {showOnboarding && <ZeroOnboarding onComplete={closeOnboarding} />}
+      {/* Sits over everything, onboarding included: a half-finished reset is
+          not a state to leave someone browsing in. */}
+      {recovering && <PasswordRecovery />}
+      {showOnboarding && !recovering && <ZeroOnboarding onComplete={closeOnboarding} />}
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           <Route element={<Layout />}>

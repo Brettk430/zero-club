@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [recovering, setRecovering] = useState(false)
 
   const fetchProfile = async (userId) => {
     if (!supabase) return
@@ -33,6 +34,9 @@ export const AuthProvider = ({ children }) => {
         fetchProfile(session.user.id)
         identify(session.user.id, { email: session.user.email })
         if (event === 'SIGNED_IN') track('signed_in')
+        // Arriving from a reset link: the session is real, but the member still
+        // has to choose a password before it means anything.
+        if (event === 'PASSWORD_RECOVERY') setRecovering(true)
       } else {
         setProfile(null)
         reset()
@@ -68,6 +72,20 @@ export const AuthProvider = ({ children }) => {
     return result
   }
 
+  // The link lands back on the app with a recovery session, which is what
+  // PASSWORD_RECOVERY below listens for.
+  const sendPasswordReset = async (email) => {
+    if (!supabase) return { error: new Error('Supabase not configured') }
+    return supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/?recovery=1`,
+    })
+  }
+
+  const setNewPassword = async (password) => {
+    if (!supabase) return { error: new Error('Supabase not configured') }
+    return supabase.auth.updateUser({ password })
+  }
+
   const signInWithGoogle = async () => {
     if (!supabase) return { error: new Error('Supabase not configured') }
     return supabase.auth.signInWithOAuth({
@@ -85,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   const isPro = profile?.is_pro ?? false
 
   return (
-    <AuthContext.Provider value={{ user, profile, isPro, loading, signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, profile, isPro, loading, signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signOut, sendPasswordReset, setNewPassword, recovering, endRecovery: () => setRecovering(false) }}>
       {children}
     </AuthContext.Provider>
   )
