@@ -48,6 +48,16 @@ const reconcile = (starting, current) => ({
   current: Number(current) || 0,
 })
 
+// The goal is picked as a month, and stored that way — but the column is a
+// date, and Postgres rejects "2028-12" outright. Because a rejected statement
+// takes the whole row update with it, one malformed month meant the debt
+// figures alongside it never landed either.
+const toDbDate = (ym) => {
+  const v = String(ym || '').slice(0, 7)
+  return /^\d{4}-\d{2}$/.test(v) ? `${v}-01` : null
+}
+const fromDbDate = (d) => (d ? String(d).slice(0, 7) : '')
+
 const randomHandle = () => {
   const a = ['Steady', 'Calm', 'Bold', 'Relentless', 'Quiet', 'Bright', 'Swift', 'Iron']
   const b = ['Falcon', 'Otter', 'Hawk', 'Wolf', 'Heron', 'Eagle', 'Fox', 'Crane']
@@ -78,9 +88,15 @@ export const ZeroProvider = ({ children }) => {
   const [onboardingRequested, setOnboardingRequested] = useState(false)
   const [onboardingLatched, setOnboardingLatched] = useState(false)
   const [onboardingDismissed, setOnboardingDismissed] = useState(false)
-  // Whether we yet know what this account holds. Onboarding must not ask until
-  // the answer is in, or a returning member gets asked during the round trip.
-  const [profileResolved, setProfileResolved] = useState(false)
+  // Which account the answer belongs to — not merely whether one has arrived.
+  // A bare boolean stays true across a sign-in, so for the one render where the
+  // new user is set but the fetch has not yet marked itself pending, the app
+  // looks like "resolved, and holding nothing" and onboarding latches open.
+  // undefined means nothing has resolved yet.
+  const [resolvedFor, setResolvedFor] = useState(undefined)
+  // undefined until auth first reports; distinguishes "nobody yet" from
+  // "somebody signed out", which must not be treated the same way.
+  const previousUserRef = useRef(undefined)
 
   // Set once the backing tables answer. Until the migration is run the app is
   // simply local-only rather than broken.
@@ -102,6 +118,31 @@ export const ZeroProvider = ({ children }) => {
     try { window.localStorage.setItem(KEYS.payments, JSON.stringify(payments.slice(-500))) } catch { /* ignore */ }
   }, [payments])
 
+  // Financial data must not survive a sign-out. A shared phone would otherwise
+  // hand the next person the previous member's balance — and worse, they would
+  // publish it to their own account on first sync and inherit a journey that
+  // was never theirs. Safe to clear now only because the account holds the
+  // authoritative copy: signing back in restores it.
+  useEffect(() => {
+    const previous = previousUserRef.current
+    previousUserRef.current = user?.id ?? null
+    if (previous === undefined || previous === null || user) return
+
+    Object.values(KEYS).forEach((key) => write(key, null))
+    setStartingDebt(0)
+    setCurrentDebt(0)
+    setGoalDate('')
+    setPayments([])
+    setAvatarUrl('')
+    setShowAmounts(true)
+    setHandle(randomHandle())
+    setCloudReady(false)
+    // the next person starts at the beginning, not mid-flow
+    setOnboardingLatched(false)
+    setOnboardingDismissed(false)
+    setOnboardingRequested(false)
+  }, [user?.id])
+
   // ── Pull ────────────────────────────────────────────────────────────────
   // Signed in, the account is the truth: it is what club standings read, and
   // the only copy that survives a reinstall, a new phone, or the home-screen
@@ -109,12 +150,11 @@ export const ZeroProvider = ({ children }) => {
   useEffect(() => {
     if (!supabase || !user) {
       setCloudReady(false)
-      setProfileResolved(true) // signed out, this device is the only answer there is
+      setResolvedFor(null) // signed out, this device is the only answer there is
       return
     }
     let cancelled = false
     setSyncing(true)
-    setProfileResolved(false)
 
     const pull = async () => {
       const { data: profile, error } = await supabase
@@ -124,7 +164,7 @@ export const ZeroProvider = ({ children }) => {
       if (error) {
         // Tables aren't there yet. Local is all there is, and that is a settled
         // answer — not a reason to keep asking.
-        setCloudReady(false); setSyncing(false); setProfileResolved(true)
+        setCloudReady(false); setSyncing(false); setResolvedFor(user.id)
         return
       }
       setCloudReady(true)
@@ -140,7 +180,7 @@ export const ZeroProvider = ({ children }) => {
         if (fixed.starting !== cloudStarting) {
           await supabase.from('profiles').update({ starting_debt: fixed.starting }).eq('id', user.id)
         }
-        setGoalDate(profile.goal_date || '')
+        setGoalDate(fromDbDate(profile.goal_date))
         setHandle(profile.handle)
         setShowAmounts(profile.show_amounts !== false)
         setAvatarUrl(profile.avatar_url || '')
@@ -157,7 +197,7 @@ export const ZeroProvider = ({ children }) => {
           await supabase.from('profiles').update({
             starting_debt: fixed.starting,
             current_debt: fixed.current,
-            goal_date: read(KEYS.goal) || null,
+            goal_date: toDbDate(read(KEYS.goal)),
           }).eq('id', user.id)
         }
       } else {
@@ -167,7 +207,7 @@ export const ZeroProvider = ({ children }) => {
           handle: read(KEYS.handle) || randomHandle(),
           starting_debt: fixed.starting,
           current_debt: fixed.current,
-          goal_date: read(KEYS.goal) || null,
+          goal_date: toDbDate(read(KEYS.goal)),
         })
       }
 
@@ -182,7 +222,7 @@ export const ZeroProvider = ({ children }) => {
         }
       }
 
-      if (!cancelled) { setSyncing(false); setProfileResolved(true) }
+      if (!cancelled) { setSyncing(false); setResolvedFor(user.id) }
     }
 
     pull()
@@ -195,7 +235,10 @@ export const ZeroProvider = ({ children }) => {
 
   const pushProfile = useCallback(async (patch) => {
     if (!supabase || !user || !cloudReadyRef.current) return
-    await supabase.from('profiles').update(patch).eq('id', user.id)
+    const { error } = await supabase.from('profiles').update(patch).eq('id', user.id)
+    // Swallowing this is what let a malformed goal date silently discard every
+    // plan written while signed in.
+    if (error) console.warn('Zero Club: profile sync failed —', error.message, patch)
   }, [user])
 
   // ── Actions ─────────────────────────────────────────────────────────────
@@ -205,7 +248,7 @@ export const ZeroProvider = ({ children }) => {
     setCurrentDebt(amount)
     setGoalDate(goal || '')
     track('zero_set', { total: amount })
-    await pushProfile({ starting_debt: amount, current_debt: amount, goal_date: goal || null })
+    await pushProfile({ starting_debt: amount, current_debt: amount, goal_date: toDbDate(goal) })
   }, [pushProfile])
 
   const logPayment = useCallback(async (amount, note = '') => {
@@ -260,14 +303,14 @@ export const ZeroProvider = ({ children }) => {
       await pushProfile({
         starting_debt: amount,
         current_debt: amount,
-        ...(goal !== undefined ? { goal_date: goal || null } : {}),
+        ...(goal !== undefined ? { goal_date: toDbDate(goal) } : {}),
       })
     }
   }, [user, pushProfile])
 
   const setGoal = useCallback(async (date) => {
     setGoalDate(date || '')
-    await pushProfile({ goal_date: date || null })
+    await pushProfile({ goal_date: toDbDate(date) })
   }, [pushProfile])
 
   const updateIdentity = useCallback(async ({ handle: nextHandle, showAmounts: nextShow, avatarUrl: nextAvatar }) => {
@@ -284,6 +327,7 @@ export const ZeroProvider = ({ children }) => {
   // it survives the OAuth redirect, which immediately makes `needsOnboarding`
   // false — without the latch the flow would tear itself down one screen early
   // and swallow the welcome. Only finishing it closes it.
+  const profileResolved = resolvedFor !== undefined && resolvedFor === (user?.id ?? null)
   const needsOnboarding = !hasZero && profileResolved && (onboardingRequested || Boolean(user))
   const onboardingOpen = onboardingLatched && !onboardingDismissed
 
