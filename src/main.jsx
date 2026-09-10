@@ -4,6 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import './lib/analytics.js' // init PostHog on load
+import { prepareShell } from './lib/native.js'
+
+prepareShell()
 
 // Register service worker for PWA/offline support
 if ('serviceWorker' in navigator) {

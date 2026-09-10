@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
 import { uploadAvatar, removeOldAvatars } from '../lib/avatars.js'
+import { canUseCamera, takePhoto, isNative, remindersPermission, scheduleMonthlyReminder, cancelReminders, tap } from '../lib/native.js'
 import { money, monthLabel } from '../lib/zero.js'
 import Avatar from '../components/Avatar.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
@@ -40,6 +41,10 @@ const ProfileEdit = () => {
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoError, setPhotoError] = useState('')
   const [saved, setSaved] = useState('')
+  const [reminders, setReminders] = useState(() => {
+    try { return localStorage.getItem('zc_reminders') === 'on' } catch { return false }
+  })
+  const [reminderNote, setReminderNote] = useState('')
 
   const now = new Date()
   const [month, setMonth] = useState(() => (goalDate ? Number(goalDate.slice(5, 7)) - 1 : now.getMonth()))
@@ -68,6 +73,41 @@ const ProfileEdit = () => {
     await setGoal(`${year}-${String(month + 1).padStart(2, '0')}`)
     setDraftBalance('')
     flash('Updated.')
+  }
+
+  // In the app this is the real camera. On the web it stays a file input,
+  // because a browser has no camera to open.
+  const shootPhoto = async () => {
+    if (!user) return
+    setPhotoBusy(true); setPhotoError('')
+    try {
+      const file = await takePhoto()
+      if (!file) { setPhotoBusy(false); return }
+      const { url, error } = await uploadAvatar(user.id, file)
+      if (error) { setPhotoError(error); setPhotoBusy(false); return }
+      await updateIdentity({ avatarUrl: url })
+      removeOldAvatars(user.id, url)
+    } catch (err) {
+      if (!/cancel/i.test(err?.message || '')) setPhotoError('Could not open the camera.')
+    }
+    setPhotoBusy(false)
+  }
+
+  const toggleReminders = async (on) => {
+    tap('light')
+    if (!on) {
+      await cancelReminders()
+      setReminders(false)
+      try { localStorage.setItem('zc_reminders', 'off') } catch { /* ignore */ }
+      return
+    }
+    const permission = await remindersPermission()
+    if (permission === 'unsupported') { setReminderNote('Reminders are available in the Zero Club app.'); return }
+    if (permission !== 'granted') { setReminderNote('Notifications are off for Zero Club in your phone’s settings.'); return }
+    await scheduleMonthlyReminder({ on: 1, hour: 18 })
+    setReminders(true)
+    setReminderNote('')
+    try { localStorage.setItem('zc_reminders', 'on') } catch { /* ignore */ }
   }
 
   const pickPhoto = async (e) => {
@@ -118,6 +158,16 @@ const ProfileEdit = () => {
             </button>
           )}
         </div>
+        {canUseCamera() && (
+          <button
+            type="button"
+            onClick={shootPhoto}
+            disabled={photoBusy}
+            className="mt-3 w-full rounded-full bg-slate-900 py-3 text-sm font-bold text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+          >
+            Take a photo
+          </button>
+        )}
         {photoError && <p className="mt-2 text-xs text-red-500">{photoError}</p>}
 
         <form onSubmit={saveIdentity} className="mt-4 space-y-3">
@@ -166,6 +216,27 @@ const ProfileEdit = () => {
             </span>
           </span>
         </label>
+      </Section>
+
+      <Section title="Reminders" hint={isNative()
+        ? 'A nudge on the 1st of each month. Scheduled on your phone, so it works without a signal.'
+        : 'Install Zero Club on your home screen to get monthly reminders.'}>
+        <label className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            checked={reminders}
+            disabled={!isNative()}
+            onChange={(e) => toggleReminders(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded accent-emerald-600 disabled:opacity-40"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">Remind me to log my payment</span>
+            <span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+              The 1st of each month, at 6pm.
+            </span>
+          </span>
+        </label>
+        {reminderNote && <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{reminderNote}</p>}
       </Section>
 
       <Section title="Appearance">

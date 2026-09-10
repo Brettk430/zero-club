@@ -132,6 +132,9 @@ const toBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'imag
 // iMessage); a download is the honest fallback everywhere else.
 export const shareProgress = async (stats) => {
   const text = shareText(stats)
+  // In the app, the system sheet reaches Messages and Instagram directly.
+  const { shareNative } = await import('./native.js')
+  if (await shareNative({ text, title: 'Zero Club' })) return 'shared'
   const canvas = await renderShareCard(stats)
   const blob = await toBlob(canvas)
   const file = blob && new File([blob], 'zero-club.png', { type: 'image/png' })

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { money } from '../lib/zero.js'
 import { shareProgress } from '../lib/shareCard.js'
+import { celebrate } from '../lib/native.js'
 
 // Crossing a milestone is the emotional peak of the whole product, and it is
 // also the only moment someone reliably wants to tell people. So the
@@ -41,6 +42,8 @@ const MilestoneCelebration = ({ milestone, stats, onClose }) => {
   const [motionOk] = useState(
     () => !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
   )
+
+  useEffect(() => { celebrate() }, [])
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose() }

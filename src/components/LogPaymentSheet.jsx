@@ -5,6 +5,7 @@ import { money, progressPct as pctOf, earnedMilestones } from '../lib/zero.js'
 import { shareProgress } from '../lib/shareCard.js'
 import { postElimination, postZeroMilestone } from '../lib/feed.js'
 import AuthModal from './AuthModal.jsx'
+import { tap, celebrate } from '../lib/native.js'
 import MilestoneCelebration from './MilestoneCelebration.jsx'
 
 // Log, watch the number drop, then be handed something worth posting.
@@ -34,6 +35,7 @@ const LogPaymentSheet = ({ onClose }) => {
     const before = new Set(earnedMilestones(startingDebt, currentDebt).map((m) => m.id))
     const result = await logPayment(value)
     if (!result) return
+    celebrate()   // the number just moved; the phone should say so
     const justEarned = earnedMilestones(startingDebt, result.remaining).filter((m) => !before.has(m.id))
 
     setDone(result)
@@ -143,7 +145,7 @@ const LogPaymentSheet = ({ onClose }) => {
                   <button
                     key={q}
                     type="button"
-                    onClick={() => setAmount(String(q))}
+                    onClick={() => { tap('light'); setAmount(String(q)) }}
                     className={`rounded-full py-2.5 text-xs font-bold transition ${
                       value === q ? 'bg-white text-slate-950' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
                     }`}

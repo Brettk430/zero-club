@@ -9,6 +9,20 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'always',
+    // The shell is the brand's ground colour, so overscroll and the area behind
+    // the keyboard never flash white.
+    backgroundColor: '#071615',
+  },
+  plugins: {
+    SplashScreen: {
+      launchAutoHide: false,      // hidden from JS once React has something to show
+      backgroundColor: '#071615',
+      showSpinner: false,
+    },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon',
+      iconColor: '#C6FF3D',
+    },
   },
 };
 
