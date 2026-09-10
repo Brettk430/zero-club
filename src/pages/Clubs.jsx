@@ -29,7 +29,7 @@ const ClubCard = ({ club }) => (
   </Link>
 )
 
-const Discover = ({ onJoined, joinedIds }) => {
+const Discover = ({ onJoined, joinedIds, prominent = false }) => {
   const [clubs, setClubs] = useState([])
   const [ready, setReady] = useState(true)
   const [loading, setLoading] = useState(true)
@@ -58,13 +58,26 @@ const Discover = ({ onJoined, joinedIds }) => {
   if (!ready) return null
 
   return (
-    <div className="mt-8">
-      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Find a club</p>
+    <div className={prominent ? 'mt-5' : 'mt-8'}>
+      {/* With no clubs of your own, finding one is the whole point of the page,
+          so it leads rather than sitting underneath an empty list. */}
+      {prominent ? (
+        <>
+          <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white">Find your club</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            Join a public one below, or start your own at the bottom.
+          </p>
+        </>
+      ) : (
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Find a club</p>
+      )}
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search public clubs…"
-        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+        className={`w-full rounded-2xl border border-slate-200 bg-white text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white ${
+          prominent ? 'mt-4 px-5 py-4 text-base' : 'mt-2 px-4 py-3 text-sm'
+        }`}
       />
       <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1">
         {[{ id: null, label: 'All' }, ...CLUB_CATEGORIES].map((c) => (
@@ -179,25 +192,23 @@ const Clubs = () => {
       <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">Clubs</h1>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Get to zero with your people. You post as {handle}.</p>
 
-      <div className="mt-5 space-y-2">
+      <div className={clubs.length || loading ? "mt-5 space-y-2" : ""}>
         {loading ? (
           <div className="h-20 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900" />
         ) : clubs.length ? (
           clubs.map((c) => <ClubCard key={c.id} club={c} />)
-        ) : (
-          <div className="rounded-2xl bg-white px-5 py-8 text-center shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
-            <p className="text-sm font-bold text-slate-900 dark:text-white">You're not in a club yet</p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Join one below, or start your own.</p>
-            {!ready && (
-              <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
-                Clubs need a database update that has not been applied yet.
-              </p>
-            )}
-          </div>
-        )}
+        ) : !ready ? (
+          <p className="rounded-2xl bg-amber-50 px-5 py-4 text-center text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+            Clubs need a database update that has not been applied yet.
+          </p>
+        ) : null}
       </div>
 
-      <Discover onJoined={refresh} joinedIds={new Set(clubs.map((c) => c.id))} />
+      <Discover
+        onJoined={refresh}
+        joinedIds={new Set(clubs.map((c) => c.id))}
+        prominent={!loading && clubs.length === 0}
+      />
 
       {/* Creating and joining are occasional acts, so they sit at the end
           rather than dominating the page you land on. */}
