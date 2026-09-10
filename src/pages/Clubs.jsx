@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
 import {
   myClubs, createClub, joinClub, leaveClub, clubStandings, clubTotals,
-  discoverClubs, joinPublicClub,
+  discoverClubs, joinPublicClub, CLUB_CATEGORIES, categoryLabel,
 } from '../lib/clubs.js'
 import { money } from '../lib/zero.js'
 import { track } from '../lib/analytics.js'
@@ -123,18 +123,19 @@ const Discover = ({ onJoined, joinedIds }) => {
   const [ready, setReady] = useState(true)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [category, setCategory] = useState(null)
   const [busyId, setBusyId] = useState(null)
 
-  const load = useCallback(async (term) => {
+  const load = useCallback(async (term, cat) => {
     setLoading(true)
-    const r = await discoverClubs(term)
+    const r = await discoverClubs(term, cat)
     setClubs(r.clubs); setReady(r.ready); setLoading(false)
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => load(search), search ? 300 : 0)
+    const t = setTimeout(() => load(search, category), search ? 300 : 0)
     return () => clearTimeout(t)
-  }, [search, load])
+  }, [search, category, load])
 
   const join = async (club) => {
     setBusyId(club.id)
@@ -155,12 +156,29 @@ const Discover = ({ onJoined, joinedIds }) => {
         className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
       />
 
+      <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1">
+        {[{ id: null, label: 'All' }, ...CLUB_CATEGORIES].map((c) => (
+          <button
+            key={c.id ?? 'all'}
+            type="button"
+            onClick={() => setCategory(c.id)}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+              category === c.id
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'bg-white text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700'
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
       <div className="mt-3 space-y-2">
         {loading ? (
           <div className="h-20 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900" />
         ) : clubs.length === 0 ? (
           <p className="rounded-2xl bg-white px-5 py-6 text-center text-sm text-slate-500 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800">
-            {search ? 'No public clubs match that.' : 'No public clubs yet — start the first one.'}
+            {search || category ? 'No public clubs match that yet.' : 'No public clubs yet — start the first one.'}
           </p>
         ) : (
           clubs.map((c) => {
@@ -170,6 +188,8 @@ const Discover = ({ onJoined, joinedIds }) => {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{c.name}</p>
                   <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    {c.category && <span className="font-semibold text-emerald-600 dark:text-emerald-400">{categoryLabel(c.category)}</span>}
+                    {c.category && ' · '}
                     {c.memberCount} {c.memberCount === 1 ? 'member' : 'members'}
                     {c.eliminated !== null && <> · {money(c.eliminated)} eliminated</>}
                   </p>
@@ -201,6 +221,7 @@ const Clubs = () => {
   const [mode, setMode] = useState(null)
   const [draft, setDraft] = useState('')
   const [isPublic, setIsPublic] = useState(false)
+  const [newCategory, setNewCategory] = useState('open')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -226,12 +247,12 @@ const Clubs = () => {
     if (!draft.trim() || busy) return
     setBusy(true); setError('')
     const result = mode === 'create'
-      ? await createClub(user.id, draft, isPublic)
+      ? await createClub(user.id, draft, isPublic, newCategory)
       : await joinClub(draft.trim().toUpperCase())
     setBusy(false)
     if (result.error) { setError(result.error); return }
     track(mode === 'create' ? 'club_created' : 'club_joined')
-    setDraft(''); setMode(null); setIsPublic(false)
+    setDraft(''); setMode(null); setIsPublic(false); setNewCategory('open')
     refresh()
   }
 
@@ -291,7 +312,7 @@ const Clubs = () => {
               <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
                 active.is_public ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/10 text-slate-300'
               }`}>
-                {active.is_public ? 'Public' : 'Private'}
+                {active.is_public ? (categoryLabel(active.category) ?? 'Public') : 'Private'}
               </span>
             </div>
             <button onClick={invite} className="mt-6 w-full rounded-full py-3.5 text-sm font-bold bg-lime text-deep transition hover:bg-[#D9FF7A]">
@@ -380,6 +401,30 @@ const Clubs = () => {
                     <span className="mt-0.5 block text-[11px] leading-4 text-slate-500 dark:text-slate-400">{hint}</span>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Only a public club needs one — a private club is reached by its
+                code, so there is nothing to be found by. */}
+            {mode === 'create' && isPublic && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">What's it about?</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {CLUB_CATEGORIES.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setNewCategory(c.id)}
+                      className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                        newCategory === c.id
+                          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                          : 'bg-slate-50 text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

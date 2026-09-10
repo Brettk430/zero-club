@@ -1,5 +1,23 @@
 import { supabase } from './supabaseClient.js'
 
+// A fixed list, mirrored by a check constraint on the column. Free text would
+// fragment into "student loans" / "Student Loan" / "student debt" within a week
+// and make filtering worthless.
+export const CLUB_CATEGORIES = [
+  { id: 'student-loans',  label: 'Student loans' },
+  { id: 'credit-cards',   label: 'Credit cards' },
+  { id: 'medical',        label: 'Medical debt' },
+  { id: 'car',            label: 'Car & auto' },
+  { id: 'couples-family', label: 'Couples & family' },
+  { id: 'friends',        label: 'Friends' },
+  { id: 'coworkers',      label: 'Coworkers' },
+  { id: 'under-30',       label: 'Under 30' },
+  { id: 'open',           label: 'Open to all' },
+]
+
+export const categoryLabel = (id) =>
+  CLUB_CATEGORIES.find((c) => c.id === id)?.label ?? null
+
 // Every call tolerates the tables not existing yet: before the migration runs,
 // clubs simply report as unavailable instead of taking the app down.
 const missingTable = (error) => !!error && /relation .* does not exist/i.test(error.message || '')
@@ -18,7 +36,7 @@ export const myClubs = async (userId) => {
   if (!supabase || !userId) return { clubs: [], ready: false }
   const { data, error } = await supabase
     .from('club_members')
-    .select('role, joined_at, clubs(id, name, invite_code, created_by)')
+    .select('role, joined_at, clubs(id, name, invite_code, created_by, is_public, category)')
     .eq('user_id', userId)
 
   if (error) return { clubs: [], ready: !notReady(error) }
@@ -31,9 +49,13 @@ export const myClubs = async (userId) => {
 // One call: the club and its founding membership land together, or neither
 // does. Doing it as two inserts from here could strand a club with no members,
 // which the read policy then makes invisible to everyone including its owner.
-export const createClub = async (userId, name, isPublic = false) => {
+export const createClub = async (userId, name, isPublic = false, category = null) => {
   if (!supabase || !userId) return { error: 'Not signed in' }
-  const { data, error } = await supabase.rpc('create_club', { club_name: name.trim(), public_club: isPublic })
+  const { data, error } = await supabase.rpc('create_club', {
+    club_name: name.trim(),
+    public_club: isPublic,
+    club_category: isPublic ? category : null, // a private club has nobody to be found by
+  })
   if (error) return { error: notReady(error) ?? error.message }
   return { club: Array.isArray(data) ? data[0] : data }
 }
@@ -50,15 +72,20 @@ export const joinClub = async (code) => {
 
 // Browsing is deliberately separate from joining: this lists names and sizes,
 // never anybody's numbers.
-export const discoverClubs = async (search = '') => {
+export const discoverClubs = async (search = '', category = null) => {
   if (!supabase) return { clubs: [], ready: false }
-  const { data, error } = await supabase.rpc('discover_clubs', { search: search || null, limit_count: 30 })
+  const { data, error } = await supabase.rpc('discover_clubs', {
+    search: search || null,
+    category_filter: category || null,
+    limit_count: 30,
+  })
   if (error) return { clubs: [], ready: !notReady(error) }
   return {
     ready: true,
     clubs: (data || []).map((c) => ({
       id: c.id,
       name: c.name,
+      category: c.category || null,
       memberCount: Number(c.member_count) || 0,
       eliminated: c.eliminated === null ? null : Number(c.eliminated),
     })),
