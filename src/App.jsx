@@ -7,8 +7,10 @@ import Home from './pages/Home.jsx'
 import Clubs from './pages/Clubs.jsx'
 const ClubDetail = lazy(() => import('./pages/ClubDetail.jsx'))
 const Member = lazy(() => import('./pages/Member.jsx'))
+const Admin = lazy(() => import('./pages/Admin.jsx'))
 import { ZeroProvider, useZero } from './context/ZeroContext.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
+import { UnreadProvider } from './context/UnreadContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { recordVisit } from './lib/payments.js'
 
@@ -56,6 +58,7 @@ function AppContent() {
             <Route path="feed" element={<Feed />} />
             <Route path="milestones" element={<Milestones />} />
             <Route path="u/:handle" element={<Member />} />
+            <Route path="admin" element={<Admin />} />
             <Route path="profile" element={<Profile />} />
             <Route path="profile/edit" element={<ProfileEdit />} />
             <Route path="privacy" element={<Privacy />} />
@@ -74,7 +77,9 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <ZeroProvider>
-          <AppContent />
+          <UnreadProvider>
+            <AppContent />
+          </UnreadProvider>
         </ZeroProvider>
       </AuthProvider>
     </ThemeProvider>

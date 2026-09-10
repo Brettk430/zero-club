@@ -9,11 +9,12 @@ import {
 import { money } from '../lib/zero.js'
 import { track } from '../lib/analytics.js'
 import Logo from '../components/Logo.jsx'
+import { useUnread } from '../context/UnreadContext.jsx'
 
 // An index, not a dashboard: pick a club and go to it. Everything about a
 // particular club — standings, chat, invites — lives on that club's own page.
 
-const ClubCard = ({ club }) => (
+const ClubCard = ({ club, unread = 0 }) => (
   <Link
     to={`/clubs/${club.id}`}
     className="flex items-center gap-4 rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-300 dark:bg-slate-900 dark:ring-slate-800 dark:hover:ring-slate-700"
@@ -21,10 +22,19 @@ const ClubCard = ({ club }) => (
     <div className="min-w-0 flex-1">
       <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{club.name}</p>
       <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-        {club.is_public ? (categoryLabel(club.category) ?? 'Public') : 'Private'}
-        {club.role === 'owner' && ' · You started it'}
+        {unread > 0
+          ? <span className="font-bold text-emerald-600 dark:text-emerald-400">{unread} new message{unread === 1 ? '' : 's'}</span>
+          : <>
+              {club.is_public ? (categoryLabel(club.category) ?? 'Public') : 'Private'}
+              {club.role === 'owner' && ' · You started it'}
+            </>}
       </p>
     </div>
+    {unread > 0 && (
+      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-lime px-1.5 text-[11px] font-black text-deep">
+        {unread > 9 ? '9+' : unread}
+      </span>
+    )}
     <span className="shrink-0 text-lg text-slate-400">→</span>
   </Link>
 )
@@ -140,6 +150,7 @@ const Discover = ({ onJoined, joinedIds, prominent = false }) => {
 const Clubs = () => {
   const { user } = useAuth()
   const { handle } = useZero()
+  const { byClub } = useUnread()
   const [clubs, setClubs] = useState([])
   const [ready, setReady] = useState(true)
   const [loading, setLoading] = useState(true)
@@ -196,7 +207,7 @@ const Clubs = () => {
         {loading ? (
           <div className="h-20 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900" />
         ) : clubs.length ? (
-          clubs.map((c) => <ClubCard key={c.id} club={c} />)
+          clubs.map((c) => <ClubCard key={c.id} club={c} unread={byClub[c.id] || 0} />)
         ) : !ready ? (
           <p className="rounded-2xl bg-amber-50 px-5 py-4 text-center text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
             Clubs need a database update that has not been applied yet.

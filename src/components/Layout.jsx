@@ -5,6 +5,7 @@ import AuthModal from './AuthModal.jsx'
 import InstallPrompt from './InstallPrompt.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
+import { useUnread } from '../context/UnreadContext.jsx'
 import Avatar from './Avatar.jsx'
 
 const navItems = [
@@ -89,8 +90,17 @@ const UserMenu = () => {
   )
 }
 
+const Badge = ({ count }) => (
+  count > 0 ? (
+    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-lime px-1 text-[10px] font-black text-deep">
+      {count > 9 ? '9+' : count}
+    </span>
+  ) : null
+)
+
 const BottomNav = () => {
   const location = useLocation()
+  const { total } = useUnread()
 
   return (
     // Sits below overlays (z-50). Tied with them it won on DOM order and
@@ -131,8 +141,9 @@ const BottomNav = () => {
               end={item.path === '/'}
               className="flex flex-1 flex-col items-center gap-0.5 px-1 py-2.5 transition-colors"
             >
-              <span className={isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}>
+              <span className={`relative ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
                 {item.icon}
+                {item.path === '/clubs' && <Badge count={total} />}
               </span>
               <span className={`text-[10px] font-medium ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
                 {item.name}

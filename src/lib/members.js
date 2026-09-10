@@ -127,3 +127,28 @@ export const fetchPendingRequests = async () => {
     at: r.requested_at,
   }))
 }
+
+// ── Admin ──────────────────────────────────────────────────────────────────
+// Each of these returns nothing unless the caller is an admin — the check is in
+// the database, so hiding the page is convenience, not the security boundary.
+export const fetchAdminOverview = async () => {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('admin_overview')
+  if (error) return null
+  const row = Array.isArray(data) ? data[0] : data
+  return row ?? null
+}
+
+export const fetchAdminMembers = async () => {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('admin_members')
+  if (error) return []
+  return data || []
+}
+
+export const fetchAdminActivity = async (limit = 60) => {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('admin_activity', { limit_count: limit })
+  if (error) return []
+  return data || []
+}

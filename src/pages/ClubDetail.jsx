@@ -5,6 +5,7 @@ import { myClubs, clubStandings, clubTotals, leaveClub, categoryLabel } from '..
 import { money } from '../lib/zero.js'
 import Avatar from '../components/Avatar.jsx'
 import ClubChat from '../components/ClubChat.jsx'
+import { useUnread } from '../context/UnreadContext.jsx'
 
 const Bar = ({ pct, highlight }) => (
   <div className="h-1.5 w-full overflow-hidden rounded-full bg-mist dark:bg-deep-600">
@@ -124,6 +125,7 @@ const ClubDetail = () => {
   const [tab, setTab] = useState('standings')
   const [copied, setCopied] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const { byClub, markRead } = useUnread()
 
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return }
@@ -133,6 +135,12 @@ const ClubDetail = () => {
   }, [user, clubId])
 
   useEffect(() => { load() }, [load])
+
+  // Reading the room is what clears it — not merely landing on the club page,
+  // where the standings tab may be all you came for.
+  useEffect(() => {
+    if (tab === 'chat' && clubId) markRead(clubId)
+  }, [tab, clubId, markRead])
 
   const invite = async () => {
     const text = `Join my Zero Club: ${club.name}\n\nCode: ${club.invite_code}\n${window.location.origin}/clubs?code=${club.invite_code}`
@@ -182,11 +190,16 @@ const ClubDetail = () => {
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex-1 rounded-full py-2.5 transition ${
+            className={`relative flex-1 rounded-full py-2.5 transition ${
               tab === id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 dark:text-slate-400'
             }`}
           >
             {label}
+            {id === 'chat' && (byClub[club.id] || 0) > 0 && tab !== 'chat' && (
+              <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-lime px-1 text-[10px] font-black text-deep">
+                {byClub[club.id] > 9 ? '9+' : byClub[club.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
