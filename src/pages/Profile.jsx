@@ -7,6 +7,7 @@ import { myClubs } from '../lib/clubs.js'
 import { earnedMilestones, MILESTONES, money, monthLabel } from '../lib/zero.js'
 import Avatar from '../components/Avatar.jsx'
 import { uploadAvatar, removeOldAvatars } from '../lib/avatars.js'
+import Friends from '../components/Friends.jsx'
 import Referral from '../components/Referral.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
 
@@ -311,6 +312,8 @@ const Profile = () => {
           )}
         </div>
       </div>
+
+      <div className="mt-3"><Friends /></div>
 
       <div className="mt-3"><Referral /></div>
 

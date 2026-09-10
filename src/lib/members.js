@@ -98,3 +98,32 @@ export const incomingRequests = async (meId) => {
     at: r.created_at,
   }))
 }
+
+export const fetchFriends = async () => {
+  if (!supabase) return { friends: [], ready: false }
+  const { data, error } = await supabase.rpc('my_friends')
+  if (error) return { friends: [], ready: !notReady(error) }
+  return {
+    ready: true,
+    friends: (data || []).map((r) => ({
+      userId: r.user_id,
+      handle: r.handle,
+      avatarUrl: r.avatar_url || '',
+      progressPct: Number(r.progress_pct) || 0,
+      badges: Number(r.badges) || 0,
+      since: r.since,
+    })),
+  }
+}
+
+export const fetchPendingRequests = async () => {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('pending_friend_requests')
+  if (error) return []
+  return (data || []).map((r) => ({
+    userId: r.user_id,
+    handle: r.handle,
+    avatarUrl: r.avatar_url || '',
+    at: r.requested_at,
+  }))
+}
