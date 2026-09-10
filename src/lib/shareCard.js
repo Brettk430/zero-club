@@ -20,25 +20,17 @@ const fitText = (ctx, text, maxWidth, startPx, weight = 900) => {
   return size
 }
 
-// The Zero Club mark: the ellipse and the diagonal from the SVG master,
-// scaled from its 256-unit viewBox onto the canvas.
-const drawMark = (ctx, cx, cy, size, color, alpha = 1) => {
-  const k = size / 256
-  ctx.save()
-  ctx.globalAlpha = alpha
-  ctx.strokeStyle = color
-  ctx.lineWidth = 27 * k
-  ctx.lineCap = 'round'
-
-  ctx.beginPath()
-  ctx.ellipse(cx, cy, 69 * k, 91 * k, 0, 0, Math.PI * 2)
-  ctx.stroke()
-
-  ctx.beginPath()
-  ctx.moveTo(cx + (78 - 128) * k, cy + (184 - 128) * k)
-  ctx.lineTo(cx + (178 - 128) * k, cy + (72 - 128) * k)
-  ctx.stroke()
-  ctx.restore()
+// The mark, loaded as the artwork rather than redrawn. Cached after the first
+// card so repeated shares don't re-fetch it.
+let markImage = null
+const loadMark = () => {
+  if (markImage) return Promise.resolve(markImage)
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => { markImage = img; resolve(img) }
+    img.onerror = () => resolve(null) // a missing watermark is not worth failing the share over
+    img.src = '/brand/mark.png'
+  })
 }
 
 const roundRect = (ctx, x, y, w, h, r) => {
@@ -51,13 +43,13 @@ const roundRect = (ctx, x, y, w, h, r) => {
   ctx.closePath()
 }
 
-export const renderShareCard = ({ amount, remaining, starting, progressPct, milestoneLabel }) => {
+export const renderShareCard = async ({ amount, remaining, starting, progressPct, milestoneLabel }) => {
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
   const ctx = canvas.getContext('2d')
 
-  ctx.fillStyle = '#062E24'
+  ctx.fillStyle = '#071615'
   ctx.fillRect(0, 0, W, H)
 
   // The brand asset, sitting behind everything
@@ -140,7 +132,7 @@ const toBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'imag
 // iMessage); a download is the honest fallback everywhere else.
 export const shareProgress = async (stats) => {
   const text = shareText(stats)
-  const canvas = renderShareCard(stats)
+  const canvas = await renderShareCard(stats)
   const blob = await toBlob(canvas)
   const file = blob && new File([blob], 'zero-club.png', { type: 'image/png' })
 

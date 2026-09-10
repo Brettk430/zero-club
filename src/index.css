@@ -17,7 +17,7 @@
   /* Tints derived from the six brand colours, for borders, hovers and the
      quieter surfaces an interface needs between "deep" and "off white". */
   --color-deep-950: #041F18;
-  --color-night: #04140F;
+  --color-night: #071615;   /* sampled from the logo artwork */
   --color-deep-700: #0A3B2E;
   --color-deep-600: #0E4838;
   --color-ink-700: #222825;
