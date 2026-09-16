@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://zero-club1.vercel.app/sitemap.xml
+# Members-only surfaces — nothing for a crawler to index
+Disallow: /admin
+Disallow: /profile
+
+Sitemap: https://joinzeroclub.com/sitemap.xml

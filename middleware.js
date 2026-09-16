@@ -9,38 +9,37 @@ const PRERENDER_HTML = `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Zero Club — Debt Payoff Accountability Platform</title>
-  <meta name="description" content="Zero Club is the accountability platform for debt payoff. Make monthly commitments, check in consistently, build streaks, and reach zero debt faster with AI coaching and community support."/>
-  <meta property="og:title" content="Zero Club — Debt freedom is a habit. We build it with you."/>
-  <meta property="og:description" content="The accountability platform for debt payoff. Monthly commitments, AI coaching, and a community of people who get it."/>
+  <title>Zero Club — Get to $0. Together.</title>
+  <meta name="description" content="Zero Club is the social club for getting out of debt. Track one number down to zero, join a club, log every payment, and celebrate the milestones with people going the same way."/>
+  <meta property="og:title" content="Zero Club — Get to $0. Together."/>
+  <meta property="og:description" content="The social club for becoming debt-free. One number, down to zero, with people going the same way."/>
   <meta property="og:type" content="website"/>
-  <meta property="og:url" content="https://zero-club1.vercel.app/"/>
-  <meta property="og:image" content="https://zero-club1.vercel.app/og-image.png"/>
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:title" content="Zero Club — Debt freedom is a habit."/>
-  <meta name="twitter:description" content="The accountability platform for debt payoff."/>
-  <meta name="twitter:image" content="https://zero-club1.vercel.app/og-image.png"/>
+  <meta property="og:url" content="https://joinzeroclub.com/"/>
+  <meta property="og:image" content="https://joinzeroclub.com/brand/share.jpg"/>
+  <meta name="twitter:card" content="summary"/>
+  <meta name="twitter:title" content="Zero Club — Get to $0. Together."/>
+  <meta name="twitter:description" content="The social club for becoming debt-free."/>
+  <meta name="twitter:image" content="https://joinzeroclub.com/brand/share.jpg"/>
 </head>
 <body>
-  <h1>Zero Club — Debt Payoff Accountability Platform</h1>
-  <p>Zero Club is the accountability platform for debt payoff. Make monthly commitments, check in consistently, build streaks, and reach zero debt faster with AI coaching and community support.</p>
+  <h1>Zero Club — Get to $0. Together.</h1>
+  <p>Zero Club is the social club for becoming debt-free. One total, tracked down to zero, alongside people going the same way.</p>
   <h2>How it works</h2>
   <ol>
-    <li>Make a commitment — set a specific monthly pledge toward your debt</li>
-    <li>Check in monthly — answer four accountability questions each month</li>
-    <li>Build your streak — consecutive months of follow-through compound</li>
-    <li>Reach zero — debt freedom through consistent behavior, not just math</li>
+    <li>Name your number — the one total you are getting to zero</li>
+    <li>Log every payment — each one moves the number down</li>
+    <li>Join a club — small groups by goal and debt type</li>
+    <li>Hit milestones — every step toward zero is worth celebrating</li>
   </ol>
   <h2>Features</h2>
   <ul>
-    <li>Debt avalanche calculator — minimize total interest paid</li>
-    <li>Monthly commitment tracking with streaks</li>
-    <li>Miles — AI behavior coach focused on consistency, not generic advice</li>
-    <li>Accountability community — small groups by goal year and debt type</li>
-    <li>Milestone achievements — celebrate every step toward zero</li>
+    <li>One number, tracked to zero — no spreadsheet, no shame</li>
+    <li>Clubs with standings, chat, and shared progress</li>
+    <li>A feed of real payments and real milestones</li>
+    <li>Shareable milestone cards</li>
+    <li>Privacy controls — show your progress as a percentage instead of a dollar figure</li>
   </ul>
-  <h2>Pricing</h2>
-  <p>Free tier includes debt tracking, commitments, and streaks. Premium ($9/month) adds unlimited AI coaching and accountability circles.</p>
+  <p>Real people. Real progress. Every payment gets you closer.</p>
 </body>
 </html>`
 
