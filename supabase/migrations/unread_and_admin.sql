@@ -140,7 +140,7 @@ language sql security definer set search_path = public stable as $$
     select 'message', p.handle, 'posted in ' || c.name, msg.created_at
       from club_messages msg join profiles p on p.id = msg.user_id join clubs c on c.id = msg.club_id
      where public.is_admin()
-  ) x
+  ) x(kind, handle, detail, at)
   order by x.at desc
   limit least(coalesce(limit_count, 60), 200);
 $$;
