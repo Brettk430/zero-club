@@ -52,7 +52,7 @@ const DeleteAccount = () => {
         <>
           <p className="text-sm font-bold text-slate-900 dark:text-white">Delete your account</p>
           <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            This permanently removes your plan, payment history, savings goals, community posts and comments.
+            This permanently removes your number, payment history, club memberships, posts and comments.
             It can't be undone, and we can't recover it for you afterwards.
           </p>
           <form onSubmit={handleDelete} className="mt-4">
