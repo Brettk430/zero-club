@@ -33,7 +33,9 @@ export const AuthProvider = ({ children }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchProfile(session.user.id)
-        identify(session.user.id, { email: session.user.email })
+        // Account id only: analytics has no need for the address, and keeping it
+        // out means the privacy policy can promise as much.
+        identify(session.user.id)
         if (event === 'SIGNED_IN') track('signed_in')
         // Arriving from a reset link: the session is real, but the member still
         // has to choose a password before it means anything.

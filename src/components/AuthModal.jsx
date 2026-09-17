@@ -50,6 +50,12 @@ const PasswordField = ({ value, onChange, placeholder, autoComplete, show, onTog
   </div>
 )
 
+// Sign in with Apple needs a Services ID and key from a paid Apple Developer
+// membership. Until Supabase's Apple provider is configured, the button can only
+// return "provider is not enabled", so it stays hidden. Set VITE_APPLE_SIGNIN
+// to 'true' in the environment to bring it back — no code change needed.
+const APPLE_ENABLED = import.meta.env.VITE_APPLE_SIGNIN === 'true'
+
 const AppleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor" aria-hidden="true">
     <path d="M17.05 12.77c.03 2.86 2.5 3.81 2.53 3.82-.02.07-.4 1.36-1.31 2.7-.79 1.16-1.61 2.31-2.9 2.34-1.27.02-1.68-.75-3.13-.75s-1.9.73-3.1.78c-1.25.04-2.2-1.26-3-2.41-1.62-2.35-2.86-6.64-1.2-9.54.83-1.44 2.3-2.35 3.9-2.37 1.22-.03 2.38.82 3.13.82.75 0 2.16-1.02 3.64-.87.62.03 2.36.25 3.48 1.89-.09.06-2.08 1.21-2.04 3.59M14.68 4.4c.66-.8 1.11-1.92.99-3.03-.95.04-2.11.64-2.8 1.44-.62.71-1.16 1.85-1.02 2.94 1.07.08 2.16-.54 2.83-1.35" />
@@ -178,19 +184,21 @@ const AuthModal = ({ onClose }) => {
           <>
             {/* Apple first: it is the option that collects least, and on iOS it
                 is the one people expect to see at the top. */}
-            <button
-              type="button"
-              onClick={async () => { setError(''); const { error: err } = await signInWithApple(); if (err) setError(friendlyError(err.message)) }}
-              className="flex w-full items-center justify-center gap-2.5 rounded-full bg-slate-900 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-            >
-              <AppleIcon />
-              Continue with Apple
-            </button>
+            {APPLE_ENABLED && (
+              <button
+                type="button"
+                onClick={async () => { setError(''); const { error: err } = await signInWithApple(); if (err) setError(friendlyError(err.message)) }}
+                className="flex w-full items-center justify-center gap-2.5 rounded-full bg-slate-900 py-3 text-sm font-bold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              >
+                <AppleIcon />
+                Continue with Apple
+              </button>
+            )}
 
             <button
               type="button"
               onClick={async () => { setError(''); const { error: err } = await signInWithGoogle(); if (err) setError(friendlyError(err.message)) }}
-              className="mt-2.5 flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              className={`${APPLE_ENABLED ? 'mt-2.5 ' : ''}flex w-full items-center justify-center gap-2.5 rounded-full border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700`}
             >
               <GoogleIcon />
               Continue with Google
