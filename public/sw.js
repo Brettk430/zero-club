@@ -1,5 +1,6 @@
 // Bump to retire every previously cached response in one go.
-const CACHE_VERSION = 'zero-club-v6';
+// v7 retires caches that stored the app's HTML under an old bundle's name.
+const CACHE_VERSION = 'zero-club-v7';
 
 // Only the offline fallback is precached. The app shell deliberately is not:
 // see the navigation strategy below.
@@ -62,11 +63,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Build output is content-hashed, so a hit is always the right file.
+  // Build output is content-hashed, so a hit is always the right file — as long
+  // as what was stored really is that file. A request for a bundle a later
+  // deploy removed used to come back as the app's HTML with a 200, and was
+  // cached under the bundle's name, breaking that screen until the cache was
+  // cleared. HTML is never stored here.
   if (url.pathname.startsWith('/assets/')) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-        if (response.ok) putInCache(request, response.clone());
+        const isHtml = (response.headers.get('content-type') || '').includes('text/html');
+        if (response.ok && !isHtml) putInCache(request, response.clone());
         return response;
       }))
     );
