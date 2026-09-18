@@ -5,6 +5,12 @@ import { identify, reset, track } from '../lib/analytics.js'
 
 const AuthContext = createContext(null)
 
+// Where every emailed link and OAuth provider hands control back to the native
+// app. Must be in Supabase's redirect allow-list, or Supabase silently swaps in
+// the Site URL and the member lands in Safari instead.
+const NATIVE_CALLBACK = 'com.zeroclub.app://auth-callback'
+const isNative = () => Capacitor.isNativePlatform()
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -49,16 +55,36 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Completes an OAuth round trip in the native app: the provider hands control
-  // back through com.zeroclub.app://auth-callback carrying the code to exchange.
+  // Completes a sign-in round trip in the native app. OAuth, magic links and
+  // password resets all hand control back through NATIVE_CALLBACK.
+  //
+  // This client uses the implicit flow, so tokens arrive in the URL fragment
+  // (#access_token=…). Reading only a ?code= query — the PKCE shape — is what
+  // made every native sign-in return to the app and silently do nothing. Both
+  // shapes are handled so a later switch to PKCE can't reintroduce that.
   useEffect(() => {
-    if (!supabase || !Capacitor.isNativePlatform()) return
+    if (!supabase || !isNative()) return
     let remove
     import('@capacitor/app').then(({ App }) => {
       App.addListener('appUrlOpen', async ({ url }) => {
         if (!url?.includes('auth-callback')) return
-        const code = new URL(url.replace('com.zeroclub.app://', 'https://x/')).searchParams.get('code')
-        if (code) await supabase.auth.exchangeCodeForSession(code)
+        const parsed = new URL(url.replace('com.zeroclub.app://', 'https://x/'))
+        const fragment = new URLSearchParams(parsed.hash.replace(/^#/, ''))
+        const code = parsed.searchParams.get('code')
+        const accessToken = fragment.get('access_token')
+        const refreshToken = fragment.get('refresh_token')
+
+        if (code) {
+          await supabase.auth.exchangeCodeForSession(code)
+        } else if (accessToken && refreshToken) {
+          await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          // setSession reports SIGNED_IN, not PASSWORD_RECOVERY, so a reset link
+          // has to be recognised here or the member skips choosing a password.
+          if (fragment.get('type') === 'recovery') setRecovering(true)
+        }
+
+        // The sign-in sheet has done its job either way.
+        import('@capacitor/browser').then(({ Browser }) => Browser.close()).catch(() => {})
       }).then((h) => { remove = () => h.remove() })
     })
     return () => { if (remove) remove() }
@@ -68,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     if (!supabase) return { error: new Error('Supabase not configured') }
     return supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: isNative() ? NATIVE_CALLBACK : window.location.origin },
     })
   }
 
@@ -95,7 +121,7 @@ export const AuthProvider = ({ children }) => {
   const sendPasswordReset = async (email) => {
     if (!supabase) return { error: new Error('Supabase not configured') }
     return supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/?recovery=1`,
+      redirectTo: isNative() ? NATIVE_CALLBACK : `${window.location.origin}/?recovery=1`,
     })
   }
 
@@ -107,18 +133,25 @@ export const AuthProvider = ({ children }) => {
   // In the native shell the browser cannot redirect back to a web origin, so
   // OAuth returns through the app's own URL scheme and is completed by the
   // deep-link listener below. On the web this stays an ordinary redirect.
-  const oauthRedirect = () =>
-    Capacitor.isNativePlatform() ? 'com.zeroclub.app://auth-callback' : window.location.origin
+  const oauthRedirect = () => (isNative() ? NATIVE_CALLBACK : window.location.origin)
 
   const signInWithProvider = async (provider) => {
     if (!supabase) return { error: new Error('Supabase not configured') }
-    return supabase.auth.signInWithOAuth({
+    const result = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: oauthRedirect(),
-        skipBrowserRedirect: Capacitor.isNativePlatform(),
+        skipBrowserRedirect: isNative(),
       },
     })
+    // skipBrowserRedirect hands back the provider URL instead of navigating, and
+    // nothing used to open it — so on iOS the button did nothing at all. It opens
+    // in Safari's in-app sheet: Google refuses sign-in inside an embedded web view.
+    if (isNative() && !result.error && result.data?.url) {
+      const { Browser } = await import('@capacitor/browser')
+      await Browser.open({ url: result.data.url, presentationStyle: 'popover' })
+    }
+    return result
   }
 
   const signInWithGoogle = () => signInWithProvider('google')
