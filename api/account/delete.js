@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { appleConfigured, revokeToken } from '../_lib/apple.js'
 
 // Permanent account deletion. Apple guideline 5.1.1 requires any app that
 // offers account creation to offer in-app deletion, and it's the right thing
@@ -32,6 +33,23 @@ export default async function handler(req, res) {
   const { data: { user }, error: authError } = await admin.auth.getUser(token)
   if (authError || !user) {
     return res.status(401).json({ error: 'Session expired — sign in again to delete your account' })
+  }
+
+  // Apple requires apps offering Sign in with Apple to revoke the member's
+  // tokens when they delete their account. It happens before the delete, since
+  // the delete cascades the stored token away. A failure is logged and never
+  // allowed to stop the deletion — the member's right to leave comes first.
+  if (appleConfigured()) {
+    const { data: credential } = await admin.from('apple_credentials')
+      .select('refresh_token').eq('user_id', user.id).maybeSingle()
+    if (credential?.refresh_token) {
+      try {
+        const result = await revokeToken(credential.refresh_token)
+        if (!result.ok) console.error('Apple token revocation failed:', result.status, result.body)
+      } catch (err) {
+        console.error('Apple token revocation failed:', err)
+      }
+    }
   }
 
   try {

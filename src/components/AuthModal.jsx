@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Capacitor } from '@capacitor/core'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 
@@ -51,11 +52,16 @@ const PasswordField = ({ value, onChange, placeholder, autoComplete, show, onTog
   </div>
 )
 
-// Sign in with Apple needs a Services ID and key from a paid Apple Developer
-// membership. Until Supabase's Apple provider is configured, the button can only
-// return "provider is not enabled", so it stays hidden. Set VITE_APPLE_SIGNIN
-// to 'true' in the environment to bring it back — no code change needed.
-const APPLE_ENABLED = import.meta.env.VITE_APPLE_SIGNIN === 'true'
+// Sign in with Apple stays hidden until Supabase's Apple provider is set up —
+// until then it can only answer "provider is not enabled". Two switches, because
+// the two need different setup: the iPhone app signs in natively and needs only
+// the bundle ID configured, while the website needs a Services ID and a secret
+// Apple expires every six months. App Review requires the first; the second is
+// optional. See docs/sign-in-with-apple.md.
+const onIPhoneApp = Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios'
+const APPLE_ENABLED = onIPhoneApp
+  ? import.meta.env.VITE_APPLE_SIGNIN === 'true'
+  : import.meta.env.VITE_APPLE_SIGNIN_WEB === 'true'
 
 const AppleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor" aria-hidden="true">

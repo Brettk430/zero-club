@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient.js'
-import { Capacitor } from '@capacitor/core'
+import { Capacitor, registerPlugin } from '@capacitor/core'
+import { apiBase } from '../lib/apiBase.js'
 import { identify, reset, track } from '../lib/analytics.js'
 
 const AuthContext = createContext(null)
@@ -10,6 +11,25 @@ const AuthContext = createContext(null)
 // the Site URL and the member lands in Safari instead.
 const NATIVE_CALLBACK = 'com.zeroclub.app://auth-callback'
 const isNative = () => Capacitor.isNativePlatform()
+
+// The app's own Sign in with Apple plugin (ios/App/App/AppleSignInPlugin.swift).
+const AppleSignIn = registerPlugin('AppleSignIn')
+
+// A one-time value per sign-in. The plugin hands Apple its SHA-256; Supabase
+// gets the original and checks the two match, so a token lifted from elsewhere
+// can't be replayed. getRandomValues works in any context, unlike crypto.subtle.
+const makeNonce = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('')
+
+// Hands the sign-in's one-time code to the server, which trades it for the
+// refresh token Apple requires be revoked if this account is ever deleted.
+// Not awaited by sign-in: nobody should wait on it, and if it fails the only
+// cost is that one future revocation is skipped.
+const linkAppleAccount = (code, accessToken) =>
+  fetch(`${apiBase}/api/apple/link`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ code }),
+  }).catch(() => {})
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
@@ -155,7 +175,32 @@ export const AuthProvider = ({ children }) => {
   }
 
   const signInWithGoogle = () => signInWithProvider('google')
-  const signInWithApple = () => signInWithProvider('apple')
+  // On iPhone: Apple's own sheet, Face ID, one tap — what App Review expects, and
+  // not a web page asking for an Apple ID password. Everywhere else it is the
+  // ordinary OAuth redirect.
+  const signInWithApple = async () => {
+    if (!supabase) return { error: new Error('Supabase not configured') }
+    if (!(isNative() && Capacitor.getPlatform() === 'ios')) return signInWithProvider('apple')
+
+    const nonce = makeNonce()
+    let apple
+    try {
+      apple = await AppleSignIn.authorize({ nonce })
+    } catch (err) {
+      // Closing the sheet is a choice, not an error worth showing.
+      if (err?.code === 'CANCELED') return { error: null, canceled: true }
+      return { error: new Error('Sign in with Apple is not available right now.') }
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: apple.identityToken,
+      nonce,
+    })
+    if (error) return { error }
+    if (apple.authorizationCode && data?.session) linkAppleAccount(apple.authorizationCode, data.session.access_token)
+    return { data, error: null }
+  }
 
   const signOut = async () => {
     if (!supabase) return
