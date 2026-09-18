@@ -124,6 +124,24 @@ export const setStatusBarTheme = async (theme) => {
   } catch { /* ignore */ }
 }
 
+// ── Viewport ───────────────────────────────────────────────────────────────
+// iOS zooms into any field whose text is under 16px and never zooms back out,
+// so every tap into an email, password or handle field left the page magnified.
+// maximum-scale=1 stops that focus zoom. In Safari it does not take pinch-zoom
+// away — Safari ignores the limit for pinching, for accessibility — and in the
+// app the page should not pinch-zoom at all, so there it is switched off too.
+// Android never auto-zooms fields, and there the limit *would* block pinching,
+// so Android is left alone.
+export const preventFocusZoom = () => {
+  const ios = isNative()
+    ? Capacitor.getPlatform() === 'ios'
+    : /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  if (!ios) return
+  const meta = document.querySelector('meta[name="viewport"]')
+  if (!meta || /maximum-scale/.test(meta.content)) return
+  meta.content += isNative() ? ', maximum-scale=1, user-scalable=no' : ', maximum-scale=1'
+}
+
 export const prepareShell = async () => {
   if (!isNative()) return
   try {
