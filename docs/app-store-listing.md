@@ -16,6 +16,7 @@ by `docs/check-listing.sh`.
 | Privacy Policy URL | https://joinzeroclub.com/privacy |
 | Age rating | 4+ |
 | Bundle ID | com.zeroclub.app |
+| Devices | iPhone only, portrait only (`TARGETED_DEVICE_FAMILY = 1`). Runs on iPad in a phone-sized window; a native iPad layout would need 13" iPad screenshots too |
 
 ## Promotional text (170)
 

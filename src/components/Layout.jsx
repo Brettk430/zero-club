@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Logo from './Logo.jsx'
 import AuthModal from './AuthModal.jsx'
@@ -156,6 +156,28 @@ const BottomNav = () => {
   )
 }
 
+// Edge to edge means content scrolls up behind the clock and the Dynamic Island,
+// where nothing sits behind it — so text collided with the status bar. This
+// strip fills that gap once the page has moved. At the very top it stays clear,
+// so the contour band still runs behind the island. env() is 0 in an ordinary
+// browser tab, so there it takes no space at all.
+const StatusBarScrim = () => {
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none fixed inset-x-0 top-0 z-40 bg-slate-100 transition-opacity duration-200 dark:bg-slate-950 ${scrolled ? 'opacity-100' : 'opacity-0'}`}
+      style={{ height: 'env(safe-area-inset-top)' }}
+    />
+  )
+}
+
 const Layout = () => {
   const { user, loading } = useAuth()
   const [showAuth, setShowAuth] = useState(false)
@@ -163,6 +185,7 @@ const Layout = () => {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      <StatusBarScrim />
 
       <header className="relative" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         {/* The contour band. Runs up behind the status bar and the Dynamic

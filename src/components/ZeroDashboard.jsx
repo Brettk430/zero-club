@@ -3,7 +3,31 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useZero } from '../context/ZeroContext.jsx'
 import { money, monthLabel, monthlyPaceNeeded, paidInMonth, distanceToNext, earnedMilestones } from '../lib/zero.js'
 import LogPaymentSheet from './LogPaymentSheet.jsx'
+import { useUnread } from '../context/UnreadContext.jsx'
 import Logo from './Logo.jsx'
+
+const ClubCard = () => {
+  const { byClub, total: unread } = useUnread()
+  const clubs = Object.keys(byClub || {}).length
+  const title = clubs === 0 ? 'Get to zero with your people' : clubs === 1 ? 'Your club' : 'Your clubs'
+  const detail = clubs === 0
+    ? 'Start a club or join one with a code'
+    : unread > 0
+      ? `${unread} new message${unread === 1 ? '' : 's'} waiting`
+      : 'See where everyone stands'
+  return (
+    <Link
+      to="/clubs"
+      className="mt-3 flex items-center justify-between rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-300 dark:bg-slate-900 dark:ring-slate-800"
+    >
+      <div>
+        <p className="text-sm font-bold text-slate-900 dark:text-white">{title}</p>
+        <p className={`mt-0.5 text-xs ${unread > 0 ? 'font-semibold text-lime' : 'text-slate-500 dark:text-slate-400'}`}>{detail}</p>
+      </div>
+      <span className="text-lg text-slate-400">→</span>
+    </Link>
+  )
+}
 
 // One screen, one idea: this number is going to zero.
 
@@ -125,17 +149,11 @@ const ZeroDashboard = () => {
         </div>
       )}
 
-      {/* Nobody does this alone — the club prompt is part of the core loop */}
-      <Link
-        to="/clubs"
-        className="mt-3 flex items-center justify-between rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 transition hover:ring-slate-300 dark:bg-slate-900 dark:ring-slate-800"
-      >
-        <div>
-          <p className="text-sm font-bold text-slate-900 dark:text-white">Get to zero with your people</p>
-          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Start a club or join one with a code</p>
-        </div>
-        <span className="text-lg text-slate-400">→</span>
-      </Link>
+      {/* Nobody does this alone — the club prompt is part of the core loop. A
+          member already in a club gets pointed at it rather than told to start
+          one. Unread counts come keyed by the clubs they belong to, so the
+          number of keys is their membership. */}
+      <ClubCard />
     </section>
   )
 }
