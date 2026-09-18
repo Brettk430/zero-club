@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useZero } from '../context/ZeroContext.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
 import { uploadAvatar, removeOldAvatars } from '../lib/avatars.js'
-import { canUseCamera, takePhoto, isNative, remindersPermission, scheduleMonthlyReminder, cancelReminders, tap } from '../lib/native.js'
+import { choosePhoto, isNative, remindersPermission, scheduleMonthlyReminder, cancelReminders, tap } from '../lib/native.js'
 import { money, monthLabel } from '../lib/zero.js'
 import Avatar from '../components/Avatar.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
@@ -75,20 +75,28 @@ const ProfileEdit = () => {
     flash('Updated.')
   }
 
-  // In the app this is the real camera. On the web it stays a file input,
-  // because a browser has no camera to open.
-  const shootPhoto = async () => {
+  const fileInput = useRef(null)
+
+  // One action for a new photo. In the app it is iOS's own Take Photo / Choose
+  // from Library sheet; on the web it is the ordinary file picker.
+  const changePhoto = () => {
+    if (photoBusy) return
+    if (isNative()) nativePhoto()
+    else fileInput.current?.click()
+  }
+
+  const nativePhoto = async () => {
     if (!user) return
     setPhotoBusy(true); setPhotoError('')
     try {
-      const file = await takePhoto()
+      const file = await choosePhoto()
       if (!file) { setPhotoBusy(false); return }
       const { url, error } = await uploadAvatar(user.id, file)
       if (error) { setPhotoError(error); setPhotoBusy(false); return }
       await updateIdentity({ avatarUrl: url })
       removeOldAvatars(user.id, url)
     } catch (err) {
-      if (!/cancel/i.test(err?.message || '')) setPhotoError('Could not open the camera.')
+      if (!/cancel/i.test(err?.message || '')) setPhotoError('Could not open your camera or photos.')
     }
     setPhotoBusy(false)
   }
@@ -141,33 +149,35 @@ const ProfileEdit = () => {
 
       <Section title="You" hint="Your handle is how the feed and club standings know you. A display name, if you set one, is shown instead.">
         <div className="flex items-center gap-4">
-          <label className="group relative cursor-pointer" title="Change photo">
+          <button type="button" onClick={changePhoto} disabled={photoBusy} className="group relative rounded-full" aria-label="Change photo">
             <Avatar url={avatarUrl} name={handle} size={64} />
+            {/* Hover only helps a mouse; the Change photo button is what a
+                phone sees, since there is no hover to reveal this. */}
             <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/55 text-[10px] font-bold uppercase tracking-wide text-white opacity-0 transition group-hover:opacity-100">
               {photoBusy ? '…' : 'Edit'}
             </span>
-            <input type="file" accept="image/*" onChange={pickPhoto} disabled={photoBusy} className="sr-only" />
-          </label>
-          {avatarUrl && (
-            <button
-              onClick={async () => { setPhotoBusy(true); await updateIdentity({ avatarUrl: '' }); if (user) removeOldAvatars(user.id, null); setPhotoBusy(false) }}
-              disabled={photoBusy}
-              className="text-xs font-semibold text-slate-500 underline underline-offset-4 transition hover:text-red-500"
-            >
-              Remove photo
-            </button>
-          )}
-        </div>
-        {canUseCamera() && (
-          <button
-            type="button"
-            onClick={shootPhoto}
-            disabled={photoBusy}
-            className="mt-3 w-full rounded-full bg-slate-900 py-3 text-sm font-bold text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
-          >
-            Take a photo
           </button>
-        )}
+          <input ref={fileInput} type="file" accept="image/*" onChange={pickPhoto} disabled={photoBusy} className="sr-only" tabIndex={-1} aria-hidden="true" />
+          <div className="flex flex-col items-start gap-1.5">
+            <button
+              type="button"
+              onClick={changePhoto}
+              disabled={photoBusy}
+              className="rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-40 dark:bg-white dark:text-slate-900"
+            >
+              {photoBusy ? 'Saving…' : avatarUrl ? 'Change photo' : 'Add a photo'}
+            </button>
+            {avatarUrl && (
+              <button
+                onClick={async () => { setPhotoBusy(true); await updateIdentity({ avatarUrl: '' }); if (user) removeOldAvatars(user.id, null); setPhotoBusy(false) }}
+                disabled={photoBusy}
+                className="text-xs font-semibold text-slate-500 underline underline-offset-4 transition hover:text-red-500"
+              >
+                Remove photo
+              </button>
+            )}
+          </div>
+        </div>
         {photoError && <p className="mt-2 text-xs text-red-500">{photoError}</p>}
 
         <form onSubmit={saveIdentity} className="mt-4 space-y-3">

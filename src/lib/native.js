@@ -39,16 +39,22 @@ export const shareNative = async ({ text, title, url }) => {
 }
 
 // ── Camera ─────────────────────────────────────────────────────────────────
-// A real camera, not a file picker. Returns a File so the existing upload path
-// is unchanged.
-export const takePhoto = async ({ fromLibrary = false } = {}) => {
+// One entry point for a new photo: iOS's own sheet offering the camera or the
+// library. Returns a File so the existing upload path is unchanged. A web file
+// input can't be used in the app — iOS wraps it in a menu that adds a "Choose
+// File" option, which means nothing for a profile photo.
+export const choosePhoto = async () => {
   if (!isNative()) return null
   const { Camera, CameraResultType, CameraSource } = await import('@capacitor/camera')
   const photo = await Camera.getPhoto({
     quality: 88,
     allowEditing: true,
     resultType: CameraResultType.Uri,
-    source: fromLibrary ? CameraSource.Photos : CameraSource.Camera,
+    source: CameraSource.Prompt,
+    promptLabelHeader: 'Profile photo',
+    promptLabelPicture: 'Take Photo',
+    promptLabelPhoto: 'Choose from Library',
+    promptLabelCancel: 'Cancel',
     width: 1024,
   })
   if (!photo?.webPath) return null
@@ -56,7 +62,6 @@ export const takePhoto = async ({ fromLibrary = false } = {}) => {
   return new File([blob], `avatar.${photo.format || 'jpg'}`, { type: blob.type || 'image/jpeg' })
 }
 
-export const canUseCamera = () => isNative()
 
 // ── Reminders ──────────────────────────────────────────────────────────────
 // Scheduled on the device, so no server, no push certificates, and they work
