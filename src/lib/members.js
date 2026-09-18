@@ -152,3 +152,20 @@ export const fetchAdminActivity = async (limit = 60) => {
   if (error) return []
   return data || []
 }
+
+// Reports, open first. Empty for anyone who is not an admin — the database
+// decides that, not this page.
+export const fetchAdminReports = async () => {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('admin_reports')
+  if (error) return []
+  return data || []
+}
+
+// action: 'remove' takes the content down; 'dismiss' leaves it. Either closes
+// every open report on the same content.
+export const resolveReport = async (reportId, action) => {
+  if (!supabase) return { error: 'Not available' }
+  const { error } = await supabase.rpc('admin_resolve_report', { report: reportId, action })
+  return { error: error ? error.message : null }
+}

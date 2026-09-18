@@ -240,11 +240,12 @@ export const ZeroProvider = ({ children }) => {
   }, [user?.id])
 
   const pushProfile = useCallback(async (patch) => {
-    if (!supabase || !user || !cloudReadyRef.current) return
+    if (!supabase || !user || !cloudReadyRef.current) return { error: null }
     const { error } = await supabase.from('profiles').update(patch).eq('id', user.id)
     // Swallowing this is what let a malformed goal date silently discard every
     // plan written while signed in.
     if (error) console.warn('Zero Club: profile sync failed —', error.message, patch)
+    return { error: error || null }
   }, [user])
 
   // ── Actions ─────────────────────────────────────────────────────────────
@@ -319,14 +320,25 @@ export const ZeroProvider = ({ children }) => {
     await pushProfile({ goal_date: toDbDate(date) })
   }, [pushProfile])
 
+  // Applied at once so the change feels instant, and rolled back if the database
+  // refuses it — a handle that is taken, or one the blocked-terms filter stops.
+  // Without the rollback the screen showed a name that was never saved.
   const updateIdentity = useCallback(async ({ handle: nextHandle, showAmounts: nextShow, avatarUrl: nextAvatar, displayName: nextName }) => {
+    const before = { handle, showAmounts, avatarUrl, displayName }
     const patch = {}
     if (nextHandle !== undefined) { setHandle(nextHandle); patch.handle = nextHandle }
     if (nextShow !== undefined) { setShowAmounts(nextShow); patch.show_amounts = nextShow }
     if (nextAvatar !== undefined) { setAvatarUrl(nextAvatar); patch.avatar_url = nextAvatar || null }
     if (nextName !== undefined) { setDisplayName(nextName); patch.display_name = nextName.trim() || null }
-    await pushProfile(patch)
-  }, [pushProfile])
+    const { error } = await pushProfile(patch)
+    if (error) {
+      if (nextHandle !== undefined) setHandle(before.handle)
+      if (nextShow !== undefined) setShowAmounts(before.showAmounts)
+      if (nextAvatar !== undefined) setAvatarUrl(before.avatarUrl)
+      if (nextName !== undefined) setDisplayName(before.displayName)
+    }
+    return { error }
+  }, [pushProfile, handle, showAmounts, avatarUrl, displayName])
 
   const hasZero = startingDebt > 0
 

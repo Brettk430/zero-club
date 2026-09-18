@@ -6,6 +6,9 @@ import { fetchFeed, toggleReaction, addComment, timeAgo } from '../lib/feed.js'
 import { myClubs, clubMemberIds } from '../lib/clubs.js'
 import { money } from '../lib/zero.js'
 import Logo from '../components/Logo.jsx'
+import ContentActions from '../components/ContentActions.jsx'
+import { useModeration } from '../context/ModerationContext.jsx'
+import { friendlyWriteError } from '../lib/moderation.js'
 
 // Every payment deserves a crowd. Positive-only by design: reactions are
 // applause, comments are encouragement, and nothing here ranks anyone.
@@ -52,17 +55,23 @@ const ReactionButton = ({ active, emoji, count, onClick, disabled }) => (
 )
 
 const PostCard = ({ post, user, onReact, onComment }) => {
+  const { isBlocked } = useModeration()
   const [showComments, setShowComments] = useState(false)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  const [commentError, setCommentError] = useState('')
+  const comments = post.comments.filter((c) => !isBlocked(c.user_id))
 
   const handleComment = async (e) => {
     e.preventDefault()
     if (!draft.trim() || sending) return
     setSending(true)
-    await onComment(post, draft)
-    setDraft('')
+    const error = await onComment(post, draft)
     setSending(false)
+    // A refused comment keeps its text, so it can be reworded rather than retyped.
+    if (error) { setCommentError(error); return }
+    setCommentError('')
+    setDraft('')
   }
 
   return (
@@ -80,6 +89,7 @@ const PostCard = ({ post, user, onReact, onComment }) => {
           </p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{timeAgo(post.created_at)}</p>
         </div>
+        <ContentActions kind="post" targetId={post.id} authorId={post.user_id} authorName={post.username} className="-mr-2 -mt-1" />
       </div>
 
       <div className="mt-3 flex items-center gap-2">
@@ -90,16 +100,19 @@ const PostCard = ({ post, user, onReact, onComment }) => {
           onClick={() => setShowComments((s) => !s)}
           className="ml-auto text-xs font-semibold text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
         >
-          {post.comments.length > 0 ? `${post.comments.length} comment${post.comments.length === 1 ? '' : 's'}` : 'Comment'}
+          {comments.length > 0 ? `${comments.length} comment${comments.length === 1 ? '' : 's'}` : 'Comment'}
         </button>
       </div>
 
       {showComments && (
         <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-800">
-          {post.comments.map((c) => (
-            <div key={c.id} className="mb-2 flex items-baseline gap-2 text-sm">
-              <span className="font-bold text-slate-800 dark:text-slate-200">{c.username}</span>
-              <span className="min-w-0 text-slate-500 dark:text-slate-400">{c.body}</span>
+          {comments.map((c) => (
+            <div key={c.id} className="mb-2 flex items-start gap-2 text-sm">
+              <p className="min-w-0 flex-1 break-words">
+                <span className="font-bold text-slate-800 dark:text-slate-200">{c.username}</span>{' '}
+                <span className="text-slate-500 dark:text-slate-400">{c.body}</span>
+              </p>
+              <ContentActions kind="comment" targetId={c.id} authorId={c.user_id} authorName={c.username} className="-my-1.5 h-7 w-7" />
             </div>
           ))}
           {user ? (
@@ -119,6 +132,7 @@ const PostCard = ({ post, user, onReact, onComment }) => {
           ) : (
             <p className="mt-1 text-xs text-slate-400">Sign in to comment.</p>
           )}
+          {user && commentError && <p className="mt-2 text-xs text-red-500">{commentError}</p>}
         </div>
       )}
     </div>
@@ -166,6 +180,7 @@ const WeekCard = ({ posts, myHandle, signedIn }) => {
 const Feed = () => {
   const { user } = useAuth()
   const { handle } = useZero()
+  const { isBlocked } = useModeration()
   const [clubs, setClubs] = useState([])
   const [scope, setScope] = useState('all') // 'all' | club id
   const [posts, setPosts] = useState([])
@@ -205,10 +220,17 @@ const Feed = () => {
     await toggleReaction(user, post, kind)
   }
 
+  // Resolves to an error message for the card to show, or null on success.
   const handleComment = async (post, body) => {
-    const comment = await addComment(user, post.id, body)
+    const { comment, error } = await addComment(user, post.id, body)
+    if (error) return friendlyWriteError(error)
     if (comment) setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, comments: [...p.comments, comment] } : p)))
+    return null
   }
+
+  // Blocked members vanish from this member's feed entirely — from the list and
+  // from the week's totals.
+  const visible = useMemo(() => posts.filter((p) => !isBlocked(p.user_id)), [posts, isBlocked])
 
   return (
     <section className="mx-auto max-w-2xl px-4 py-5 sm:px-6 sm:py-10">
@@ -235,9 +257,9 @@ const Feed = () => {
         </div>
       )}
 
-      {ready && posts.length > 0 && (
+      {ready && visible.length > 0 && (
         <div className="mt-4">
-          <WeekCard posts={posts} myHandle={handle} signedIn={Boolean(user)} />
+          <WeekCard posts={visible} myHandle={handle} signedIn={Boolean(user)} />
         </div>
       )}
 
@@ -251,7 +273,7 @@ const Feed = () => {
             <p className="text-lg font-black text-slate-900 dark:text-slate-100">The feed is warming up.</p>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Posts are almost ready — check back shortly.</p>
           </div>
-        ) : posts.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
             <Logo variant="plain" size={56} className="mx-auto opacity-70" />
             <p className="mt-3 text-lg font-black text-slate-900 dark:text-slate-100">Quiet in here — for now.</p>
@@ -262,7 +284,7 @@ const Feed = () => {
             </p>
           </div>
         ) : (
-          posts.map((post) => (
+          visible.map((post) => (
             <PostCard key={post.id} post={post} user={user} onReact={handleReact} onComment={handleComment} />
           ))
         )}

@@ -19,6 +19,7 @@ const Privacy = () => (
       <p><strong className="text-slate-900 dark:text-white">Your email address</strong>, so you can sign in and get back into your account if you forget your password.</p>
       <p><strong className="text-slate-900 dark:text-white">The number you're paying off</strong> — one total, an optional target date, and the payments you log against it. You type all of it; we never connect to your bank and we never see your account numbers or credentials.</p>
       <p><strong className="text-slate-900 dark:text-white">Optional profile details</strong> — a display name, a handle and a profile photo, if you choose to add them.</p>
+      <p><strong className="text-slate-900 dark:text-white">Reports and blocks</strong> — if you report something, we keep the report, a copy of what you reported and who sent it, so we can act on it. If you block someone, we keep that list so we can hide them from you. The person you report or block is never told.</p>
       <p><strong className="text-slate-900 dark:text-white">Usage analytics</strong>, through PostHog, so we know which parts of the app help and which don't. Once you sign in, that activity is linked to your account, but never to your email address.</p>
     </Section>
 

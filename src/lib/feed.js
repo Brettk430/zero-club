@@ -93,12 +93,14 @@ export const toggleReaction = async (user, post, kind) => {
   }
 }
 
+// Returns the error rather than swallowing it: a comment the blocked-terms
+// filter refuses must say so, not vanish.
 export const addComment = async (user, postId, body) => {
-  if (!supabase || !user || !body.trim()) return null
+  if (!supabase || !user || !body.trim()) return { comment: null, error: null }
   const { data, error } = await supabase.from('post_comments')
     .insert({ post_id: postId, user_id: user.id, username: username(user), body: body.trim().slice(0, 500) })
     .select().single()
-  return error ? null : data
+  return { comment: error ? null : data, error }
 }
 
 export const timeAgo = (date) => {

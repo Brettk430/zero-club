@@ -13,6 +13,7 @@ const Admin = lazy(() => import('./pages/Admin.jsx'))
 import { ZeroProvider, useZero } from './context/ZeroContext.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { UnreadProvider } from './context/UnreadContext.jsx'
+import { ModerationProvider } from './context/ModerationContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { recordVisit } from './lib/payments.js'
 
@@ -21,6 +22,7 @@ const Milestones = lazy(() => import('./pages/Milestones.jsx'))
 const Profile = lazy(() => import('./pages/Profile.jsx'))
 const ProfileEdit = lazy(() => import('./pages/ProfileEdit.jsx'))
 const Privacy = lazy(() => import('./pages/Privacy.jsx'))
+const Terms = lazy(() => import('./pages/Terms.jsx'))
 
 const PageSpinner = () => (
   <div className="flex h-64 items-center justify-center">
@@ -69,6 +71,7 @@ function AppContent() {
             <Route path="profile" element={<Profile />} />
             <Route path="profile/edit" element={<ProfileEdit />} />
             <Route path="privacy" element={<Privacy />} />
+            <Route path="terms" element={<Terms />} />
             {/* Routes the rebuild retired */}
             <Route path="community" element={<Navigate to="/feed" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -85,7 +88,9 @@ function App() {
       <AuthProvider>
         <ZeroProvider>
           <UnreadProvider>
-            <AppContent />
+            <ModerationProvider>
+              <AppContent />
+            </ModerationProvider>
           </UnreadProvider>
         </ZeroProvider>
       </AuthProvider>

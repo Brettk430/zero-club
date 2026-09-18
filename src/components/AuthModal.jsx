@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 
@@ -269,7 +270,15 @@ const AuthModal = ({ onClose }) => {
                 Email me a link instead
               </button>
             </div>
-            <button onClick={onClose} className="mt-3 w-full rounded-full py-2 text-sm text-slate-400 transition hover:text-slate-600">Cancel</button>
+            {/* Covers every way in above — Apple, Google, password and magic
+                link — so agreeing is part of joining, whichever door is used. */}
+            <p className="mt-4 text-center text-[11px] leading-5 text-slate-400 dark:text-slate-500">
+              By continuing, you agree to the{' '}
+              <Link to="/terms" onClick={onClose} className="font-semibold underline underline-offset-2">Terms</Link>, including{' '}
+              zero tolerance for abusive content, and the{' '}
+              <Link to="/privacy" onClick={onClose} className="font-semibold underline underline-offset-2">Privacy Policy</Link>.
+            </p>
+            <button onClick={onClose} className="mt-2 w-full rounded-full py-2 text-sm text-slate-400 transition hover:text-slate-600">Cancel</button>
           </>
         )}
       </div>

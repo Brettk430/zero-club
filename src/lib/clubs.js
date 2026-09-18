@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { friendlyWriteError } from './moderation.js'
 
 // A fixed list, mirrored by a check constraint on the column. Free text would
 // fragment into "student loans" / "Student Loan" / "student debt" within a week
@@ -56,7 +57,7 @@ export const createClub = async (userId, name, isPublic = false, category = null
     public_club: isPublic,
     club_category: isPublic ? category : null, // a private club has nobody to be found by
   })
-  if (error) return { error: notReady(error) ?? error.message }
+  if (error) return { error: notReady(error) ?? friendlyWriteError(error) }
   return { club: Array.isArray(data) ? data[0] : data }
 }
 
@@ -163,6 +164,6 @@ export const sendMessage = async (clubId, userId, body) => {
   const text = body.trim()
   if (!text) return { error: null }
   const { error } = await supabase.from('club_messages').insert({ club_id: clubId, user_id: userId, body: text })
-  if (error) return { error: notReady(error) ?? error.message }
+  if (error) return { error: notReady(error) ?? friendlyWriteError(error) }
   return { error: null }
 }

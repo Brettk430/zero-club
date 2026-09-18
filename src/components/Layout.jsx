@@ -280,6 +280,9 @@ const Layout = () => {
           <Link to="/privacy" className="underline decoration-slate-300 underline-offset-4 transition hover:text-slate-700 dark:decoration-slate-600 dark:hover:text-slate-200">
             Privacy
           </Link>
+          <Link to="/terms" className="underline decoration-slate-300 underline-offset-4 transition hover:text-slate-700 dark:decoration-slate-600 dark:hover:text-slate-200">
+            Terms
+          </Link>
           <span className="hidden sm:inline">Not financial advice — your plan, your call.</span>
         </div>
       </footer>

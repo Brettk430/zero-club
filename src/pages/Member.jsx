@@ -6,6 +6,8 @@ import { categoryLabel } from '../lib/clubs.js'
 import { money } from '../lib/zero.js'
 import Avatar from '../components/Avatar.jsx'
 import Logo from '../components/Logo.jsx'
+import ContentActions from '../components/ContentActions.jsx'
+import { useModeration } from '../context/ModerationContext.jsx'
 
 const MILESTONE_TOTAL = 11
 
@@ -30,6 +32,7 @@ const Stat = ({ label, value, accent }) => (
 const Member = () => {
   const { handle } = useParams()
   const { user } = useAuth()
+  const { isBlocked, unblock } = useModeration()
   const [profile, setProfile] = useState(null)
   const [clubs, setClubs] = useState([])
   const [ready, setReady] = useState(true)
@@ -97,13 +100,14 @@ const Member = () => {
       <div className="rounded-[28px] bg-slate-950 p-6 text-white sm:p-8">
         <div className="flex items-center gap-4">
           <Avatar url={profile.avatarUrl} name={profile.handle} size={64} />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="break-words text-2xl font-black tracking-tight">{profile.displayName || profile.handle}</h1>
             <p className="mt-0.5 text-xs text-slate-500">
               {sinceLabel(profile.memberSince)}
               {profile.mutualFriends > 0 && ` · ${profile.mutualFriends} mutual`}
             </p>
           </div>
+          <ContentActions kind="profile" targetId={profile.userId} authorId={profile.userId} authorName={profile.handle} tone="dark" className="-mr-2 self-start" />
         </div>
 
         <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-deep-600">
@@ -124,7 +128,19 @@ const Member = () => {
           <Stat label="Friends" value={profile.friendCount} />
         </div>
 
-        {!profile.isSelf && friendAction && (
+        {!profile.isSelf && isBlocked(profile.userId) && (
+          <div className="mt-6 rounded-2xl border border-white/10 p-4">
+            <p className="text-sm text-slate-300">You've blocked {profile.handle}. Their posts and messages are hidden from you.</p>
+            <button
+              onClick={() => act(() => unblock(profile.userId))}
+              disabled={busy}
+              className="mt-3 w-full rounded-full border border-white/15 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+            >
+              {busy ? '…' : 'Unblock'}
+            </button>
+          </div>
+        )}
+        {!profile.isSelf && !isBlocked(profile.userId) && friendAction && (
           <button
             onClick={() => act(friendAction.run)}
             disabled={busy}

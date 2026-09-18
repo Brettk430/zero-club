@@ -2,10 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchChat, sendMessage } from '../lib/clubs.js'
 import Avatar from './Avatar.jsx'
 import Logo from './Logo.jsx'
+import ContentActions from './ContentActions.jsx'
+import { useModeration } from '../context/ModerationContext.jsx'
 
 const stamp = (iso) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
 const ClubChat = ({ clubId, meId }) => {
+  const { isBlocked } = useModeration()
   const [messages, setMessages] = useState([])
   const [ready, setReady] = useState(true)
   const [loading, setLoading] = useState(true)
@@ -73,20 +76,27 @@ const ClubChat = ({ clubId, meId }) => {
           <div className="flex h-32 items-center justify-center">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900 dark:border-slate-700 dark:border-t-white" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : messages.filter((m) => !isBlocked(m.user_id)).length === 0 ? (
           <div className="py-10 text-center">
             <Logo variant="plain" size={44} className="mx-auto opacity-70" />
             <p className="mt-3 text-sm font-bold text-slate-900 dark:text-white">No messages yet</p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Say something — this room is just your club.</p>
           </div>
         ) : (
-          messages.map((m) => {
+          // A blocked member's messages are hidden here, not deleted: the rest
+          // of the club still sees them, and a report is how they come down.
+          messages.filter((m) => !isBlocked(m.user_id)).map((m) => {
             const mine = m.user_id === meId
             return (
               <div key={m.id} className={`flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
                 {!mine && <Avatar url={m.avatar_url} name={m.handle} size={28} />}
                 <div className={`max-w-[78%] ${mine ? 'text-right' : ''}`}>
-                  {!mine && <p className="mb-0.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">{m.handle}</p>}
+                  {!mine && (
+                    <div className="mb-0.5 flex items-center gap-0.5">
+                      <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">{m.handle}</p>
+                      <ContentActions kind="message" targetId={m.id} authorId={m.user_id} authorName={m.handle} className="-my-2 h-7 w-7" />
+                    </div>
+                  )}
                   <div className={`inline-block rounded-2xl px-3.5 py-2 text-sm leading-5 ${
                     mine
                       ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'

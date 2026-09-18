@@ -8,6 +8,8 @@ import { choosePhoto, isNative, remindersPermission, scheduleMonthlyReminder, ca
 import { money, monthLabel } from '../lib/zero.js'
 import Avatar from '../components/Avatar.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
+import { useModeration } from '../context/ModerationContext.jsx'
+import { friendlyWriteError } from '../lib/moderation.js'
 
 // Everything editable, in one place and in order of how often it changes.
 // Scattered across the profile, half of it was unreachable: the goal date could
@@ -39,6 +41,9 @@ const ProfileEdit = () => {
   const [draftName, setDraftName] = useState(displayName)
   const [draftBalance, setDraftBalance] = useState('')
   const [photoBusy, setPhotoBusy] = useState(false)
+  const [identityError, setIdentityError] = useState('')
+  const { blocks, unblock } = useModeration()
+  const [unblocking, setUnblocking] = useState(null)
   const [photoError, setPhotoError] = useState('')
   const [saved, setSaved] = useState('')
   const [reminders, setReminders] = useState(() => {
@@ -62,7 +67,14 @@ const ProfileEdit = () => {
 
   const saveIdentity = async (e) => {
     e.preventDefault()
-    await updateIdentity({ handle: draftHandle.trim(), displayName: draftName })
+    setIdentityError('')
+    const { error } = await updateIdentity({ handle: draftHandle.trim(), displayName: draftName })
+    // 'Name saved.' used to show whatever happened; a taken or refused handle
+    // now says so and keeps what was typed so it can be changed.
+    if (error) {
+      setIdentityError(error.code === '23505' ? 'That handle is taken — try another.' : friendlyWriteError(error))
+      return
+    }
     flash('Name saved.')
   }
 
@@ -190,6 +202,7 @@ const ProfileEdit = () => {
             <input value={draftName} maxLength={40} placeholder="Leave blank to stay as your handle" onChange={(e) => setDraftName(e.target.value)} className={`mt-1 ${field}`} />
           </label>
           <button type="submit" className="w-full rounded-full bg-slate-900 py-3 text-sm font-bold text-white dark:bg-white dark:text-slate-900">Save</button>
+          {identityError && <p className="text-xs text-red-500">{identityError}</p>}
         </form>
       </Section>
 
@@ -262,6 +275,28 @@ const ProfileEdit = () => {
             </button>
           ))}
         </div>
+      </Section>
+
+      <Section title="Blocked" hint="People you've blocked. Their posts, comments and messages are hidden from you, and they aren't told.">
+        {blocks.length === 0 ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">You haven't blocked anyone.</p>
+        ) : (
+          <ul className="space-y-2">
+            {blocks.map((b) => (
+              <li key={b.blocked_id} className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800">
+                <span className="min-w-0 truncate text-sm font-bold text-slate-900 dark:text-white">{b.blocked_handle || 'A member'}</span>
+                <button
+                  type="button"
+                  disabled={unblocking === b.blocked_id}
+                  onClick={async () => { setUnblocking(b.blocked_id); await unblock(b.blocked_id); setUnblocking(null) }}
+                  className="shrink-0 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-white disabled:opacity-40 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  {unblocking === b.blocked_id ? '…' : 'Unblock'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
 
       <Section title="Account">

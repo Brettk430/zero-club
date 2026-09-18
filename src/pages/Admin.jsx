@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
-import { fetchAdminOverview, fetchAdminMembers, fetchAdminActivity } from '../lib/members.js'
+import { fetchAdminOverview, fetchAdminMembers, fetchAdminActivity, fetchAdminReports, resolveReport } from '../lib/members.js'
 import { money } from '../lib/zero.js'
 import Avatar from '../components/Avatar.jsx'
 
@@ -31,19 +31,89 @@ const KIND = {
   message: { dot: 'bg-slate-500',   label: 'chat' },
 }
 
+const REASON = {
+  harassment: 'Harassment', hate: 'Hate speech', sexual: 'Sexual content',
+  'self-harm': 'Self-harm or threats', spam: 'Spam or scam', other: 'Other',
+}
+
+// A post's snapshot is its type and payload as JSON; read it as a sentence.
+const readable = (r) => {
+  if (r.target_type !== 'post' || !r.snapshot) return r.snapshot
+  const [type, ...rest] = r.snapshot.split(': ')
+  try {
+    const p = JSON.parse(rest.join(': '))
+    return type === 'milestone' ? `Milestone post: ${p.label}` : `Payment post: ${p.amount ? money(p.amount) : 'amount hidden'}`
+  } catch { return r.snapshot }
+}
+
+const hoursSince = (iso) => (Date.now() - new Date(iso).getTime()) / 3600000
+
+// Apple expects reports acted on within 24 hours; the age is shown against that.
+const ReportCard = ({ r, onResolve, busy }) => {
+  const open = r.status === 'open'
+  const hours = hoursSince(r.created_at)
+  return (
+    <div className={`rounded-2xl bg-white p-4 shadow-sm ring-1 dark:bg-slate-900 ${open ? 'ring-slate-100 dark:ring-slate-800' : 'opacity-60 ring-slate-100 dark:ring-slate-800'}`}>
+      <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-wide">
+        <span className="rounded-full bg-red-50 px-2 py-0.5 text-red-600 dark:bg-red-950/40 dark:text-red-400">{REASON[r.reason] ?? r.reason}</span>
+        <span className="text-slate-400">{r.target_type}</span>
+        {r.reports_on_target > 1 && <span className="text-amber-600 dark:text-amber-400">{r.reports_on_target} reports</span>}
+        <span className={`ml-auto normal-case tracking-normal ${open && hours > 20 ? 'text-red-500' : 'text-slate-400'}`}>{ago(r.created_at)}</span>
+      </div>
+      <p className="mt-2 whitespace-pre-wrap break-words rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+        {readable(r) || '(nothing captured)'}
+      </p>
+      <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+        By <span className="font-bold">{r.author_handle || 'deleted account'}</span> · reported by {r.reporter_handle || 'deleted account'}
+        {!r.still_there && ' · already gone'}
+      </p>
+      {r.note && <p className="mt-1 text-[11px] italic text-slate-500 dark:text-slate-400">“{r.note}”</p>}
+      {open ? (
+        <div className="mt-3 flex gap-2">
+          <button onClick={() => onResolve(r.id, 'remove')} disabled={busy}
+            className="flex-1 rounded-full bg-red-600 py-2.5 text-xs font-bold text-white transition hover:bg-red-700 disabled:opacity-40">
+            {r.target_type === 'profile' ? 'Reset profile' : 'Remove'}
+          </button>
+          <button onClick={() => onResolve(r.id, 'dismiss')} disabled={busy}
+            className="flex-1 rounded-full border border-slate-200 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+            Dismiss
+          </button>
+        </div>
+      ) : (
+        <p className="mt-2 text-[11px] font-bold text-slate-400">{r.status === 'removed' ? 'Removed' : 'Dismissed'} {ago(r.resolved_at)}</p>
+      )}
+    </div>
+  )
+}
+
 const Admin = () => {
   const { user, loading: authLoading } = useAuth()
   const [overview, setOverview] = useState(null)
   const [members, setMembers] = useState([])
   const [activity, setActivity] = useState([])
+  const [reports, setReports] = useState([])
+  const [resolving, setResolving] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('members')
 
   useEffect(() => {
     if (!user) { setLoading(false); return }
-    Promise.all([fetchAdminOverview(), fetchAdminMembers(), fetchAdminActivity()])
-      .then(([o, m, a]) => { setOverview(o); setMembers(m); setActivity(a); setLoading(false) })
+    Promise.all([fetchAdminOverview(), fetchAdminMembers(), fetchAdminActivity(), fetchAdminReports()])
+      .then(([o, m, a, r]) => {
+        setOverview(o); setMembers(m); setActivity(a); setReports(r)
+        // Open reports are the one thing here with a deadline, so they come first.
+        if (r.some((x) => x.status === 'open')) setTab('reports')
+        setLoading(false)
+      })
   }, [user])
+
+  const onResolve = async (id, action) => {
+    setResolving(id)
+    await resolveReport(id, action)
+    setReports(await fetchAdminReports())
+    setResolving(null)
+  }
+  const openReports = reports.filter((r) => r.status === 'open').length
 
   if (authLoading || loading) {
     return <section className="mx-auto max-w-3xl px-4 py-6 sm:px-6"><div className="h-40 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-900" /></section>
@@ -81,7 +151,7 @@ const Admin = () => {
       </div>
 
       <div className="mt-6 flex rounded-full border border-slate-200 bg-white p-0.5 text-sm font-bold dark:border-slate-700 dark:bg-slate-900">
-        {[['members', `Members (${members.length})`], ['activity', 'Activity']].map(([id, label]) => (
+        {[['reports', openReports ? `Reports (${openReports})` : 'Reports'], ['members', `Members (${members.length})`], ['activity', 'Activity']].map(([id, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
@@ -92,7 +162,17 @@ const Admin = () => {
         ))}
       </div>
 
-      {tab === 'members' ? (
+      {tab === 'reports' ? (
+        <div className="mt-3 space-y-2">
+          {reports.length === 0 ? (
+            <p className="rounded-2xl bg-white p-5 text-sm text-slate-500 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800">
+              No reports. When someone reports a post, comment, message, profile or club it lands here — act on it within 24 hours.
+            </p>
+          ) : (
+            reports.map((r) => <ReportCard key={r.id} r={r} onResolve={onResolve} busy={resolving === r.id} />)
+          )}
+        </div>
+      ) : tab === 'members' ? (
         <div className="mt-3 space-y-2">
           {members.map((m) => (
             <div key={m.user_id} className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 shadow-sm ring-1 ring-slate-100 dark:bg-slate-900 dark:ring-slate-800">
