@@ -14,7 +14,7 @@ by `docs/check-listing.sh`.
 | Support URL | https://joinzeroclub.com |
 | Marketing URL | https://joinzeroclub.com |
 | Privacy Policy URL | https://joinzeroclub.com/privacy |
-| Age rating | 4+ |
+| Age rating | Answer the questionnaire honestly — the app has user-generated content (club chat, feed, comments). Expect 13+, not 4+. Apple asks whether the app has moderation, reporting and blocking: it has all three, which keeps the rating down |
 | Bundle ID | com.zeroclub.app |
 | Devices | iPhone only, portrait only (`TARGETED_DEVICE_FAMILY = 1`). Runs on iPad in a phone-sized window; a native iPad layout would need 13" iPad screenshots too |
 
@@ -111,6 +111,27 @@ Profile → Delete my account, backed by `/api/account/delete`, which removes th
 auth user and everything cascading from it.
 
 ---
+
+# App Review notes (paste into the submission)
+
+Reviewers get stuck without an account, and a stuck reviewer rejects. Give them:
+
+```
+Zero Club is a debt-payoff tracker. Members type in one total they owe — the app
+never connects to a bank and never sees account numbers or card details.
+
+Test account
+  Email: <create one and put it here>
+  Password: <...>
+
+To see the main flows:
+  • Log a payment: the green + button on the home screen
+  • Clubs: Clubs tab → Find a club, or create one and share the invite code
+  • Report or block: the ⋯ on any post, comment or chat message from another member
+  • Account deletion: Profile → Edit profile → Delete my account (immediate, permanent)
+
+Sign in with Apple is offered alongside Google and email.
+```
 
 # Blockers before submission
 
