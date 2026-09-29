@@ -26,3 +26,7 @@ dist-ssr
 # Claude Code local settings
 .claude/settings.local.json
 .vercel
+
+# Apple signing keys — downloadable once, and a credential. Never commit one.
+*.p8
+AuthKey_*
