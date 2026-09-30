@@ -32,7 +32,7 @@ const PasswordRecovery = () => {
   const field = 'w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 pr-12 text-white outline-none focus:border-emerald-500 placeholder:text-slate-500'
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950 px-5">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-night px-5">
       <div className="w-full max-w-sm text-center">
         <Logo variant="plain" size={56} className="mx-auto" />
         {done ? (

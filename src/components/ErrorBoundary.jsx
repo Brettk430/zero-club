@@ -33,7 +33,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 px-6 text-center dark:bg-slate-950">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 px-6 text-center dark:bg-night">
           <div className="max-w-sm">
             <img src="/brand/mark.png" alt="" width="56" height="56" className="mx-auto h-14 w-14 opacity-80" />
             <h1 className="mt-6 text-xl font-black text-slate-900 dark:text-white">Something went wrong</h1>

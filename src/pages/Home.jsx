@@ -17,7 +17,7 @@ const Home = () => {
 
   return (
     <section>
-      <div className="bg-slate-950 px-5 py-20 text-center text-white sm:py-28">
+      <div className="bg-night px-5 py-20 text-center text-white sm:py-28">
         <Logo variant="plain" size={200} className="mx-auto sm:!h-[260px] sm:!w-[260px]" />
         <h1 className="mt-6 text-3xl font-black tracking-tight sm:text-5xl">Get to $0. Together.</h1>
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-slate-400 sm:text-lg">

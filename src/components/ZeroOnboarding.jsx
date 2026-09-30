@@ -195,7 +195,7 @@ const ZeroOnboarding = ({ onComplete }) => {
   if (awaitingAuth) return <AuthModal onClose={() => setAwaitingAuth(false)} />
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-slate-950">
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-night">
       <div className="flex min-h-full flex-col px-6 py-10 sm:px-8">
         <div className="flex items-center gap-2">
           <Logo variant="plain" size={26} />

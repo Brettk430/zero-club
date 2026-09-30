@@ -106,7 +106,7 @@ const BottomNav = () => {
     // Sits below overlays (z-50). Tied with them it won on DOM order and
     // covered the payment sheet's submit button on mobile.
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-lg md:hidden dark:border-slate-800 dark:bg-slate-950/95"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur-lg md:hidden dark:border-slate-800 dark:bg-night/95"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex">
@@ -172,7 +172,7 @@ const StatusBarScrim = () => {
   return (
     <div
       aria-hidden="true"
-      className={`pointer-events-none fixed inset-x-0 top-0 z-40 bg-slate-100 transition-opacity duration-200 dark:bg-slate-950 ${scrolled ? 'opacity-100' : 'opacity-0'}`}
+      className={`pointer-events-none fixed inset-x-0 top-0 z-40 bg-slate-100 transition-opacity duration-200 dark:bg-night ${scrolled ? 'opacity-100' : 'opacity-0'}`}
       style={{ height: 'env(safe-area-inset-top)' }}
     />
   )
@@ -183,7 +183,7 @@ const Layout = () => {
   const [showAuth, setShowAuth] = useState(false)
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-night dark:text-slate-100">
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       <StatusBarScrim />
 
