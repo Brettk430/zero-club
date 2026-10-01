@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useZero } from '../context/ZeroContext.jsx'
+import { isNative } from '../lib/native.js'
 
 const DISMISS_KEY = 'zc_install_dismissed'
 
@@ -55,6 +56,11 @@ const InstallPrompt = () => {
     close()
   }
 
+  // Inside the app this prompt is nonsense — it is already installed. The web
+  // view's user agent still says iPhone and reports itself as not standalone,
+  // so without this check the native app told people to add it to their home
+  // screen.
+  if (isNative()) return null
   if (dismissed || !hasZero || (!installEvent && !showIosHint)) return null
 
   return (

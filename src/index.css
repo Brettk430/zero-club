@@ -71,8 +71,11 @@
   --color-yellow-400: #C6FF3D;
   --color-yellow-500: #A8E62E;
 
-  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Emoji carry meaning here — badges, the streak flame, milestone labels — so
+     the emoji faces are named explicitly rather than left to fallback, which a
+     newer iOS was not resolving from Sora or Inter. */
+  --font-display: "Sora", ui-sans-serif, system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 
 /* These are defaults, so they belong in @layer base. Unlayered CSS beats
