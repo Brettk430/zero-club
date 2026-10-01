@@ -121,8 +121,9 @@ Zero Club is a debt-payoff tracker. Members type in one total they owe — the a
 never connects to a bank and never sees account numbers or card details.
 
 Test account
-  Email: <create one and put it here>
-  Password: <...>
+  Email: appreview@joinzeroclub.com
+  Password: ZeroClub-Review-2026
+  (a real account: 50% eliminated, seven payments, badges, in a club with chat)
 
 To see the main flows:
   • Log a payment: the green + button on the home screen
