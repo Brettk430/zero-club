@@ -59,7 +59,7 @@ const toDbDate = (ym) => {
 }
 const fromDbDate = (d) => (d ? String(d).slice(0, 7) : '')
 
-const randomHandle = () => {
+export const randomHandle = () => {
   const a = ['Steady', 'Calm', 'Bold', 'Relentless', 'Quiet', 'Bright', 'Swift', 'Iron']
   const b = ['Falcon', 'Otter', 'Hawk', 'Wolf', 'Heron', 'Eagle', 'Fox', 'Crane']
   return `${a[Math.floor(Math.random() * a.length)]}${b[Math.floor(Math.random() * b.length)]}${Math.floor(Math.random() * 90) + 10}`

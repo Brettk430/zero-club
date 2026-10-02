@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useZero } from '../context/ZeroContext.jsx'
+import { useZero, randomHandle } from '../context/ZeroContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import AuthModal from './AuthModal.jsx'
 import Logo from './Logo.jsx'
@@ -142,14 +142,50 @@ const StepWelcome = ({ total, onFinish }) => (
   </div>
 )
 
+// The database names a new row Memberb79c3f6d when nothing better arrives
+// first, and that lands on their posts and club standings. Offering a name
+// here — already filled in, so accepting costs one tap — means nobody has to
+// find Edit profile to stop being a serial number.
+const StepHandle = ({ value, onChange, onSave, busy, error }) => (
+  <>
+    <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-lime">Last thing</p>
+    <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">What should we call you?</h1>
+    <p className="mt-3 text-sm leading-6 text-slate-400">
+      This is how you show up in clubs and the feed. Not your real name — unless you want it to be.
+    </p>
+    <form onSubmit={(e) => { e.preventDefault(); onSave() }} className="mt-8">
+      <input
+        value={value}
+        maxLength={24}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck="false"
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-lg font-bold text-white outline-none focus:border-lime"
+      />
+      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      <button
+        type="submit"
+        disabled={busy || !value.trim()}
+        className="mt-5 w-full rounded-full bg-lime py-4 text-sm font-black text-deep transition hover:bg-[#D9FF7A] disabled:opacity-40"
+      >
+        {busy ? 'Saving…' : "That's me"}
+      </button>
+    </form>
+  </>
+)
+
 const ZeroOnboarding = ({ onComplete }) => {
-  const { setZero } = useZero()
+  const { setZero, updateIdentity } = useZero()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [amount, setAmount] = useState('')
   const [goal, setGoal] = useState('')
   const [awaitingAuth, setAwaitingAuth] = useState(false)
+  const [handle, setHandle] = useState('')
+  const [savingHandle, setSavingHandle] = useState(false)
+  const [handleError, setHandleError] = useState('')
 
   const total = Number(amount.replace(/[^0-9]/g, '')) || 0
 
@@ -187,10 +223,30 @@ const ZeroOnboarding = ({ onComplete }) => {
     if (user && finishWhenSignedIn.current) {
       finishWhenSignedIn.current = false
       setAwaitingAuth(false)
-      finish()
+      // Signed in at last. Offer a name before handing over, rather than
+      // letting the database's Memberb79c3f6d become their identity.
+      setHandle(randomHandle())
+      setStep(3)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+
+  const saveHandle = async () => {
+    const next = handle.trim()
+    if (!next) return
+    setSavingHandle(true); setHandleError('')
+    const { error } = await updateIdentity({ handle: next })
+    setSavingHandle(false)
+    if (error) {
+      setHandleError(error.code === '23505'
+        ? 'Someone has that one — try another.'
+        : /content_blocked/.test(error.message || '')
+          ? "That contains language Zero Club doesn't allow."
+          : 'Could not save that. Try again.')
+      return
+    }
+    finish()
+  }
 
   if (awaitingAuth) return <AuthModal onClose={() => setAwaitingAuth(false)} />
 
@@ -207,6 +263,7 @@ const ZeroOnboarding = ({ onComplete }) => {
             {step === 0 && <StepAmount value={amount} onChange={setAmount} onNext={() => setStep(1)} />}
             {step === 1 && <StepDate total={total} value={goal} onChange={setGoal} onNext={commitAnswers} onBack={() => setStep(0)} />}
             {step === 2 && <StepWelcome total={total} onFinish={handleFinish} />}
+            {step === 3 && <StepHandle value={handle} onChange={setHandle} onSave={saveHandle} busy={savingHandle} error={handleError} />}
           </div>
         </div>
       </div>
