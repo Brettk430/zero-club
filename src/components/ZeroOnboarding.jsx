@@ -176,7 +176,7 @@ const StepHandle = ({ value, onChange, onSave, busy, error }) => (
 )
 
 const ZeroOnboarding = ({ onComplete }) => {
-  const { setZero, updateIdentity } = useZero()
+  const { setZero, updateIdentity, handle: currentHandle } = useZero()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -209,6 +209,15 @@ const ZeroOnboarding = ({ onComplete }) => {
   // once never fired, and the member was left sitting in onboarding.
   const finishWhenSignedIn = useRef(false)
 
+  // Serial numbers the database hands out when nothing better arrived first.
+  const isSerialName = (name) => !name || /^Member[0-9a-f]{6,}$/i.test(name)
+
+  // Pre-fill with their own name if they have chosen one; otherwise suggest.
+  const askForName = () => {
+    setHandle(isSerialName(currentHandle) ? randomHandle() : currentHandle)
+    setStep(3)
+  }
+
   // Signing in is the last step, not a wall in the middle of it.
   const handleFinish = () => {
     if (!user) {
@@ -216,7 +225,9 @@ const ZeroOnboarding = ({ onComplete }) => {
       setAwaitingAuth(true)
       return
     }
-    finish()
+    // Already signed in — someone who signed in first and set their number
+    // afterwards. They need the name step just as much.
+    askForName()
   }
 
   useEffect(() => {
@@ -225,8 +236,7 @@ const ZeroOnboarding = ({ onComplete }) => {
       setAwaitingAuth(false)
       // Signed in at last. Offer a name before handing over, rather than
       // letting the database's Memberb79c3f6d become their identity.
-      setHandle(randomHandle())
-      setStep(3)
+      askForName()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
