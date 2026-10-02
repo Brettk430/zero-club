@@ -88,6 +88,7 @@ const AuthModal = ({ onClose }) => {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [created, setCreated] = useState(false)
 
   const mismatch = mode === 'signup' && confirm.length > 0 && password !== confirm
   const tooShort = mode === 'signup' && password.length > 0 && password.length < 6
@@ -106,6 +107,10 @@ const AuthModal = ({ onClose }) => {
 
     if (err) setError(friendlyError(err.message))
     else if (mode === 'signup' && !data?.session) { setError(''); setSent(true) }
+    // Signing up used to close this on the spot, dropping the new member
+    // straight into "name your number" — which read as being bounced back into
+    // another form. Say the account exists, then hand over.
+    else if (mode === 'signup') { setError(''); setCreated(true) }
     else onClose()
     setLoading(false)
   }
@@ -141,7 +146,17 @@ const AuthModal = ({ onClose }) => {
     >
       <div className="mx-4 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl dark:border-slate-700 dark:bg-slate-900">
 
-        {sent ? (
+        {created ? (
+            <>
+              <p className="text-lg font-black text-slate-900 dark:text-slate-100">You're in 🎉</p>
+              <p className="mt-3 leading-7 text-slate-500 dark:text-slate-400">
+                Welcome to Zero Club. Next: name the number you're getting to zero — it takes about ten seconds.
+              </p>
+              <button onClick={onClose} className="mt-8 w-full rounded-full bg-lime py-3.5 text-sm font-black text-deep transition hover:bg-[#D9FF7A]">
+                Let's go
+              </button>
+            </>
+          ) : sent ? (
           <>
             <p className="text-lg font-black text-slate-900 dark:text-slate-100">
               {mode === 'magic' ? 'Check your email' : mode === 'reset' ? 'Check your email' : 'Confirm your email'}
