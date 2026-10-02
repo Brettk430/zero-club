@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Capacitor } from '@capacitor/core'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 
 const inputCls = 'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500'
@@ -79,7 +79,7 @@ const GoogleIcon = () => (
 )
 
 const AuthModal = ({ onClose }) => {
-  const { signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signInWithApple, sendPasswordReset } = useAuth()
+  const { user, signIn, signInWithPassword, signUpWithPassword, signInWithGoogle, signInWithApple, sendPasswordReset } = useAuth()
   const [mode, setMode] = useState('signin') // signin | signup | magic | reset
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -89,6 +89,18 @@ const AuthModal = ({ onClose }) => {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [created, setCreated] = useState(false)
+  // Set before the request: the session can land before the call resolves, and
+  // without this the close-on-session effect would race the welcome away.
+  const welcomePending = useRef(false)
+
+  // Apple and Google finish inside the app rather than by redirecting away, so
+  // nothing here was closing the sheet: the member signed in successfully and
+  // went on looking at the sign-in form. Closing on the session itself covers
+  // every route in, including ones added later. The two screens that are meant
+  // to outlive signing in — the welcome, and 'check your email' — hold it open.
+  useEffect(() => {
+    if (user && !created && !sent && !welcomePending.current) onClose()
+  }, [user, created, sent, onClose])
 
   const mismatch = mode === 'signup' && confirm.length > 0 && password !== confirm
   const tooShort = mode === 'signup' && password.length > 0 && password.length < 6
@@ -100,12 +112,13 @@ const AuthModal = ({ onClose }) => {
       if (password !== confirm) { setError("Those passwords don't match."); return }
       if (password.length < 6) { setError('Use at least 6 characters.'); return }
     }
+    welcomePending.current = mode === 'signup'
     setLoading(true); setError('')
 
     const fn = mode === 'signup' ? signUpWithPassword : signInWithPassword
     const { data, error: err } = await fn(email.trim(), password.trim())
 
-    if (err) setError(friendlyError(err.message))
+    if (err) { welcomePending.current = false; setError(friendlyError(err.message)) }
     else if (mode === 'signup' && !data?.session) { setError(''); setSent(true) }
     // Signing up used to close this on the spot, dropping the new member
     // straight into "name your number" — which read as being bounced back into
