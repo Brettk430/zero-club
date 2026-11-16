@@ -10,7 +10,7 @@ import Avatar from '../components/Avatar.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
 import { useModeration } from '../context/ModerationContext.jsx'
 import { friendlyWriteError } from '../lib/moderation.js'
-import { pushSupported, pushPermission, enablePush, fetchNotificationPrefs, saveNotificationPrefs } from '../lib/push.js'
+import { pushSupported, pushPermission, enablePush, fetchNotificationPrefs, saveNotificationPrefs, NOTIFICATION_KINDS } from '../lib/push.js'
 
 // Everything editable, in one place and in order of how often it changes.
 // Scattered across the profile, half of it was unreachable: the goal date could
@@ -52,7 +52,7 @@ const ProfileEdit = () => {
   })
   const [reminderNote, setReminderNote] = useState('')
   const [pushState, setPushState] = useState('unsupported')
-  const [prefs, setPrefs] = useState({ chat: true, milestones: true })
+  const [prefs, setPrefs] = useState(() => Object.fromEntries(NOTIFICATION_KINDS.map(([key]) => [key, true])))
   const [pushNote, setPushNote] = useState('')
 
   useEffect(() => {
@@ -287,8 +287,8 @@ const ProfileEdit = () => {
       </Section>
 
       <Section title="Notifications" hint={pushSupported()
-        ? 'From your clubs, as they happen. Each kind can be turned off on its own.'
-        : 'Club notifications are available in the Zero Club app for iPhone.'}>
+        ? 'From your friends and clubs, as they happen. Each kind can be turned off on its own.'
+        : 'Notifications are available in the Zero Club app for iPhone.'}>
         {pushSupported() && pushState !== 'granted' && (
           <div className="mb-3">
             {pushState === 'denied' ? (
@@ -306,10 +306,7 @@ const ProfileEdit = () => {
             )}
           </div>
         )}
-        {[
-          ['chat', 'Club chat', 'When someone posts in one of your clubs. At most one every few minutes per club.'],
-          ['milestones', 'Milestones', 'When a clubmate crosses a milestone, so you can cheer them on.'],
-        ].map(([key, label, detail]) => (
+        {NOTIFICATION_KINDS.map(([key, label, detail]) => (
           <label key={key} className="mt-3 flex items-start gap-3 first:mt-0">
             <input
               type="checkbox"

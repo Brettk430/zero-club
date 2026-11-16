@@ -43,9 +43,9 @@ export const enablePush = async () => {
   }
 }
 
-// The moment to ask is right after someone has said something to their club:
-// "tell me when they answer" is obvious then, where at launch it is a stranger
-// asking for something. Asked once; Settings is the way back after that.
+// The moment to ask is right after someone has reached out — a club message,
+// a friend request, an accepted request: "tell me when they answer" is obvious
+// then, where at launch it is a stranger asking for something. Asked once; Settings is the way back after that.
 export const offerPush = async () => {
   if (!pushSupported()) return
   try { if (localStorage.getItem(ASKED_KEY)) return } catch { return }
@@ -89,39 +89,48 @@ export const releaseToken = async () => {
   try { await supabase.rpc('unregister_push_token', { push_token: currentToken }) } catch { /* signing out regardless */ }
 }
 
-// Tells the server a chat message or milestone post was just written, so it
-// can tell the club. Fire and forget: a notification that doesn't go out must
-// never get in the way of the message itself.
-export const notifyClub = async (kind, id) => {
-  if (!supabase || !id) return
+// Tells the server the member just did something worth hearing about — a chat
+// message, a post, a comment, a like, a friend request — naming the row, so it
+// can tell the people concerned. Fire and forget: a notification that doesn't
+// go out must never get in the way of the thing itself.
+export const notifyPush = async (kind, fields) => {
+  if (!supabase || !(fields?.id || fields?.other)) return
   try {
     const token = (await supabase.auth.getSession()).data.session?.access_token
     if (!token) return
     await fetch(`${apiBase}/api/push/notify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ kind, id }),
+      body: JSON.stringify({ kind, ...fields }),
     })
   } catch { /* best effort */ }
 }
 
 // ── Choices ────────────────────────────────────────────────────────────────
-// No row means both are on.
+// One switch per kind; no row means all of them are on.
+export const NOTIFICATION_KINDS = [
+  ['chat', 'Club chat', 'When someone posts in one of your clubs. At most one every few minutes per club.'],
+  ['friend_requests', 'Friend requests', 'When someone asks to be friends, or says yes to your request.'],
+  ['comments', 'Comments', 'On your posts, and replies in threads you’ve joined.'],
+  ['reactions', 'Likes and cheers', 'When someone likes or celebrates your post.'],
+  ['friend_payments', 'Friends’ payments', 'When a friend logs a payment. At most twice a day per friend.'],
+  ['milestones', 'Milestones', 'When a friend or clubmate crosses a milestone.'],
+]
+const ALL_ON = Object.fromEntries(NOTIFICATION_KINDS.map(([key]) => [key, true]))
+
 export const fetchNotificationPrefs = async (userId) => {
-  const fallback = { chat: true, milestones: true }
-  if (!supabase || !userId) return fallback
+  if (!supabase || !userId) return ALL_ON
   const { data, error } = await supabase.from('notification_prefs')
-    .select('chat, milestones').eq('user_id', userId).maybeSingle()
-  if (error || !data) return fallback
-  return data
+    .select(NOTIFICATION_KINDS.map(([key]) => key).join(', ')).eq('user_id', userId).maybeSingle()
+  if (error || !data) return ALL_ON
+  return { ...ALL_ON, ...data }
 }
 
 export const saveNotificationPrefs = async (userId, prefs) => {
   if (!supabase || !userId) return { error: 'Not signed in' }
   const { error } = await supabase.from('notification_prefs').upsert({
     user_id: userId,
-    chat: prefs.chat,
-    milestones: prefs.milestones,
+    ...Object.fromEntries(NOTIFICATION_KINDS.map(([key]) => [key, prefs[key] !== false])),
     updated_at: new Date().toISOString(),
   })
   return { error: error ? 'Could not save that — try again.' : null }
