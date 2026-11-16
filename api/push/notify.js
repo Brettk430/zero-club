@@ -106,7 +106,11 @@ const milestone = async (user, id) => {
   ])
   if (!tokens.length) return { status: 200, sent: 0 }
 
-  const label = clip(String(post.payload?.label || 'a milestone'), 60)
+  // A lock screen is read by whoever is nearby, so no dollar figure goes on
+  // one: "$10,000 Eliminated" becomes a plain milestone, while "Halfway to
+  // Zero" says nothing about money and is kept.
+  const raw = String(post.payload?.label || '')
+  const label = raw && !/\$|\d{3,}/.test(raw) ? clip(raw, 60) : 'A new milestone'
   const emoji = post.payload?.emoji ? `${post.payload.emoji} ` : ''
   return deliver(tokens, {
     title: `${handle} hit a milestone`,
