@@ -10,6 +10,7 @@ import Avatar from '../components/Avatar.jsx'
 import DeleteAccount from '../components/DeleteAccount.jsx'
 import { useModeration } from '../context/ModerationContext.jsx'
 import { friendlyWriteError } from '../lib/moderation.js'
+import { pushSupported, pushPermission, enablePush, fetchNotificationPrefs, saveNotificationPrefs } from '../lib/push.js'
 
 // Everything editable, in one place and in order of how often it changes.
 // Scattered across the profile, half of it was unreachable: the goal date could
@@ -50,6 +51,14 @@ const ProfileEdit = () => {
     try { return localStorage.getItem('zc_reminders') === 'on' } catch { return false }
   })
   const [reminderNote, setReminderNote] = useState('')
+  const [pushState, setPushState] = useState('unsupported')
+  const [prefs, setPrefs] = useState({ chat: true, milestones: true })
+  const [pushNote, setPushNote] = useState('')
+
+  useEffect(() => {
+    pushPermission().then(setPushState)
+    if (user?.id) fetchNotificationPrefs(user.id).then(setPrefs)
+  }, [user?.id])
 
   const now = new Date()
   const [month, setMonth] = useState(() => (goalDate ? Number(goalDate.slice(5, 7)) - 1 : now.getMonth()))
@@ -128,6 +137,21 @@ const ProfileEdit = () => {
     setReminders(true)
     setReminderNote('')
     try { localStorage.setItem('zc_reminders', 'on') } catch { /* ignore */ }
+  }
+
+  const turnOnPush = async () => {
+    tap('light')
+    const result = await enablePush()
+    setPushState(result)
+    setPushNote(result === 'denied' ? 'Notifications are off for Zero Club in your phone’s settings.' : '')
+  }
+
+  const togglePref = async (key, on) => {
+    tap('light')
+    const next = { ...prefs, [key]: on }
+    setPrefs(next)
+    const { error } = await saveNotificationPrefs(user?.id, next)
+    if (error) { setPrefs(prefs); setPushNote(error) } else setPushNote('')
   }
 
   const pickPhoto = async (e) => {
@@ -260,6 +284,47 @@ const ProfileEdit = () => {
           </span>
         </label>
         {reminderNote && <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{reminderNote}</p>}
+      </Section>
+
+      <Section title="Notifications" hint={pushSupported()
+        ? 'From your clubs, as they happen. Each kind can be turned off on its own.'
+        : 'Club notifications are available in the Zero Club app for iPhone.'}>
+        {pushSupported() && pushState !== 'granted' && (
+          <div className="mb-3">
+            {pushState === 'denied' ? (
+              <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                Notifications are off for Zero Club. Turn them on in your iPhone’s Settings → Zero Club → Notifications.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={turnOnPush}
+                className="w-full rounded-full bg-slate-900 py-3 text-sm font-bold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900"
+              >
+                Turn on notifications
+              </button>
+            )}
+          </div>
+        )}
+        {[
+          ['chat', 'Club chat', 'When someone posts in one of your clubs. At most one every few minutes per club.'],
+          ['milestones', 'Milestones', 'When a clubmate crosses a milestone, so you can cheer them on.'],
+        ].map(([key, label, detail]) => (
+          <label key={key} className="mt-3 flex items-start gap-3 first:mt-0">
+            <input
+              type="checkbox"
+              checked={prefs[key]}
+              disabled={!user}
+              onChange={(e) => togglePref(key, e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded accent-emerald-600 disabled:opacity-40"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">{label}</span>
+              <span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">{detail}</span>
+            </span>
+          </label>
+        ))}
+        {pushNote && <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{pushNote}</p>}
       </Section>
 
       <Section title="Appearance">

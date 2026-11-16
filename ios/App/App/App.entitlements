@@ -9,5 +9,10 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!-- Push notifications. Xcode writes "development" here and swaps in
+	     "production" itself when an archive is exported for TestFlight or the
+	     App Store, so this value is right for both. -->
+	<key>aps-environment</key>
+	<string>development</string>
 </dict>
 </plist>

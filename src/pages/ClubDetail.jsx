@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { myClubs, clubStandings, clubTotals, leaveClub, categoryLabel } from '../lib/clubs.js'
 import { money } from '../lib/zero.js'
@@ -122,7 +122,13 @@ const ClubDetail = () => {
   const navigate = useNavigate()
   const [club, setClub] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('standings')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState(() => (searchParams.get('tab') === 'chat' ? 'chat' : 'standings'))
+  // A tapped chat notification lands here with ?tab=chat, including when this
+  // club is already the screen on show.
+  useEffect(() => {
+    if (searchParams.get('tab') === 'chat') setTab('chat')
+  }, [searchParams])
   const [copied, setCopied] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const { byClub, markRead } = useUnread()

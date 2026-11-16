@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { notifyClub } from './push.js'
 
 // Feed data layer. Every function tolerates the tables not existing yet
 // (migration pending) by returning empty results — the UI shows a warming-up
@@ -41,12 +42,13 @@ export const postElimination = async (user, handle, { amount, remaining, progres
 
 export const postZeroMilestone = async (user, handle, milestone) => {
   if (!supabase || !user || !milestone) return
-  await supabase.from('posts').insert({
+  const { data } = await supabase.from('posts').insert({
     user_id: user.id,
     username: handle || username(user),
     type: 'milestone',
     payload: { label: milestone.label, emoji: milestone.emoji },
-  })
+  }).select('id').single()
+  notifyClub('milestone', data?.id)
 }
 
 // Posts with aggregated reactions and comments, newest first.

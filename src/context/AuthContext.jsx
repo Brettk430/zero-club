@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient.js'
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { apiBase } from '../lib/apiBase.js'
 import { identify, reset, track } from '../lib/analytics.js'
+import { releaseToken } from '../lib/push.js'
 
 const AuthContext = createContext(null)
 
@@ -204,6 +205,8 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     if (!supabase) return
+    // While the session still exists: only its owner can hand the token back.
+    await releaseToken()
     await supabase.auth.signOut()
     setProfile(null)
   }

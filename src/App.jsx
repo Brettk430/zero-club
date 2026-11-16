@@ -5,6 +5,7 @@ import ZeroOnboarding from './components/ZeroOnboarding.jsx'
 import PasswordRecovery from './components/PasswordRecovery.jsx'
 import Entrance from './components/Entrance.jsx'
 import DeepLinks from './components/DeepLinks.jsx'
+import PushListener from './components/PushListener.jsx'
 import Home from './pages/Home.jsx'
 import Clubs from './pages/Clubs.jsx'
 const ClubDetail = lazy(() => import('./pages/ClubDetail.jsx'))
@@ -54,6 +55,7 @@ function AppContent() {
     <BrowserRouter>
       <Entrance />
       <DeepLinks />
+      <PushListener />
       {/* Sits over everything, onboarding included: a half-finished reset is
           not a state to leave someone browsing in. */}
       {recovering && <PasswordRecovery />}
