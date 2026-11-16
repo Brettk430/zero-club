@@ -30,12 +30,23 @@ fall back to the step's own month/year rather than trusting the parent state.
 
 ## 4. Push notifications
 
-Deferred deliberately for launch. Worth building around what members actually do:
-start with club chat replies and milestone celebrations, which people are glad to
-receive. Needs an APNs key, `@capacitor/push-notifications`, device-token storage,
-a sender (Supabase function or a Vercel endpoint), and per-category opt-outs.
-The monthly payment reminder already works without any of it — the phone schedules
-that locally.
+Built (2026-11-16) for iOS: club chat messages and clubmates' milestones, with an
+on/off for each under Profile → Edit → Notifications. iOS asks for permission
+the first time a member posts in club chat, or from that settings section.
+To switch it on:
+
+- Run `supabase/migrations/push_notifications.sql` in the Supabase SQL editor.
+- developer.apple.com → Certificates, IDs & Profiles → Keys → **+**, tick
+  **Apple Push Notifications service (APNs)**, download the `.p8`.
+- Vercel → zero-club → Settings → Environment Variables: `APNS_KEY_ID` (the
+  key's ID) and `APNS_PRIVATE_KEY` (the `.p8` contents). `APPLE_TEAM_ID` is
+  already there from Sign in with Apple. Redeploy.
+- Ship a new build: the app now carries the Push Notifications entitlement.
+
+Until the key is set, `/api/push/notify` answers `not_configured` and the app
+carries on as before. Android needs a Firebase project and
+`android/app/google-services.json` before it can register; the app doesn't try
+there yet. The monthly payment reminder is still a local notification.
 
 ## 5. Tidy after review
 

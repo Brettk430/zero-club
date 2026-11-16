@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchChat, sendMessage } from '../lib/clubs.js'
+import { offerPush } from '../lib/push.js'
 import Avatar from './Avatar.jsx'
 import Logo from './Logo.jsx'
 import ContentActions from './ContentActions.jsx'
@@ -59,6 +60,7 @@ const ClubChat = ({ clubId, meId }) => {
     if (err) { setError(err); return }
     setDraft('')
     load()
+    offerPush()   // just spoke to the club: the moment "tell me when they answer" makes sense
   }
 
   if (!ready) {
