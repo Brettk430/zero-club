@@ -132,10 +132,19 @@ const toBlob = (canvas) => new Promise((resolve) => canvas.toBlob(resolve, 'imag
 // iMessage); a download is the honest fallback everywhere else.
 export const shareProgress = async (stats) => {
   const text = shareText(stats)
-  // In the app, the system sheet reaches Messages and Instagram directly.
-  const { shareNative } = await import('./native.js')
-  if (await shareNative({ text, title: 'Zero Club' })) return 'shared'
+  const { isNative, shareNative, shareImageNative } = await import('./native.js')
+
+  // The card is the point of sharing, so draw it first. This used to hand the
+  // native sheet the words and return — meaning the app shared a wall of text
+  // while the website shared the picture.
   const canvas = await renderShareCard(stats)
+
+  if (isNative()) {
+    if (await shareImageNative({ dataUrl: canvas.toDataURL('image/png'), text, title: 'Zero Club' })) return 'shared'
+    // Writing the file failed; the words still beat nothing.
+    if (await shareNative({ text, title: 'Zero Club' })) return 'shared'
+  }
+
   const blob = await toBlob(canvas)
   const file = blob && new File([blob], 'zero-club.png', { type: 'image/png' })
 

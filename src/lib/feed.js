@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js'
-import { notifyClub } from './push.js'
+import { notifyPush } from './push.js'
 
 // Feed data layer. Every function tolerates the tables not existing yet
 // (migration pending) by returning empty results — the UI shows a warming-up
@@ -32,12 +32,13 @@ export const postElimination = async (user, handle, { amount, remaining, progres
   const payload = showAmounts
     ? { amount: Number(amount), remaining: Number(remaining), progressPct: Number(progressPct) || 0 }
     : { hidden: true, progressPct: Number(progressPct) || 0 }
-  await supabase.from('posts').insert({
+  const { data } = await supabase.from('posts').insert({
     user_id: user.id,
     username: handle || username(user),
     type: 'payment',
     payload,
-  })
+  }).select('id').single()
+  notifyPush('payment', { id: data?.id })
 }
 
 export const postZeroMilestone = async (user, handle, milestone) => {
@@ -48,7 +49,7 @@ export const postZeroMilestone = async (user, handle, milestone) => {
     type: 'milestone',
     payload: { label: milestone.label, emoji: milestone.emoji },
   }).select('id').single()
-  notifyClub('milestone', data?.id)
+  notifyPush('milestone', { id: data?.id })
 }
 
 // Posts with aggregated reactions and comments, newest first.
@@ -91,7 +92,8 @@ export const toggleReaction = async (user, post, kind) => {
     await supabase.from('post_reactions').delete()
       .eq('post_id', post.id).eq('user_id', user.id).eq('kind', kind)
   } else {
-    await supabase.from('post_reactions').insert({ post_id: post.id, user_id: user.id, kind })
+    const { error } = await supabase.from('post_reactions').insert({ post_id: post.id, user_id: user.id, kind })
+    if (!error) notifyPush('reaction', { id: post.id, reaction: kind })
   }
 }
 
@@ -102,6 +104,7 @@ export const addComment = async (user, postId, body) => {
   const { data, error } = await supabase.from('post_comments')
     .insert({ post_id: postId, user_id: user.id, username: username(user), body: body.trim().slice(0, 500) })
     .select().single()
+  if (!error) notifyPush('comment', { id: data?.id })
   return { comment: error ? null : data, error }
 }
 

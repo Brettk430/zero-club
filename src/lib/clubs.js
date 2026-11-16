@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js'
 import { friendlyWriteError } from './moderation.js'
-import { notifyClub } from './push.js'
+import { notifyPush } from './push.js'
 
 // A fixed list, mirrored by a check constraint on the column. Free text would
 // fragment into "student loans" / "Student Loan" / "student debt" within a week
@@ -167,6 +167,6 @@ export const sendMessage = async (clubId, userId, body) => {
   const { data, error } = await supabase.from('club_messages')
     .insert({ club_id: clubId, user_id: userId, body: text }).select('id').single()
   if (error) return { error: notReady(error) ?? friendlyWriteError(error) }
-  notifyClub('chat', data?.id)
+  notifyPush('chat', { id: data?.id })
   return { error: null }
 }

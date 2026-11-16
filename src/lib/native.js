@@ -38,6 +38,31 @@ export const shareNative = async ({ text, title, url }) => {
   }
 }
 
+// Sharing a picture natively means handing the sheet a file on disk — iOS will
+// not take a blob or a data URL. The card is written to the cache directory,
+// which the system clears on its own, and shared from there. Returns false if
+// anything goes wrong so the caller can fall back to sharing the words alone.
+export const shareImageNative = async ({ dataUrl, text, title }) => {
+  if (!isNative()) return false
+  try {
+    const [{ Filesystem, Directory }, { Share }] = await Promise.all([
+      import('@capacitor/filesystem'),
+      import('@capacitor/share'),
+    ])
+    const path = `zero-club-${Date.now()}.png`
+    await Filesystem.writeFile({
+      path,
+      directory: Directory.Cache,
+      data: dataUrl.split(',')[1],   // the sheet wants the bytes, not the prefix
+    })
+    const { uri } = await Filesystem.getUri({ path, directory: Directory.Cache })
+    await Share.share({ text, title, files: [uri], dialogTitle: 'Share your progress' })
+    return true
+  } catch {
+    return false
+  }
+}
+
 // ── Camera ─────────────────────────────────────────────────────────────────
 // One entry point for a new photo: iOS's own sheet offering the camera or the
 // library. Returns a File so the existing upload path is unchanged. A web file

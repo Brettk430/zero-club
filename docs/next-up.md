@@ -30,23 +30,20 @@ fall back to the step's own month/year rather than trusting the parent state.
 
 ## 4. Push notifications
 
-Built (2026-11-16) for iOS: club chat messages and clubmates' milestones, with an
-on/off for each under Profile → Edit → Notifications. iOS asks for permission
-the first time a member posts in club chat, or from that settings section.
-To switch it on:
+Built for iOS in 1.1. What sends, to whom, and how often is listed at the top of
+`api/push/notify.js`: club chat, friend requests and accepts, comments and
+thread replies, likes and cheers, friends' payments, and milestones. Each has
+its own switch under Profile → Edit → Notifications. No notification carries a
+dollar amount. iOS asks for permission after a member's first club message or
+friend request, or from that settings section.
 
-- Run `supabase/migrations/push_notifications.sql` in the Supabase SQL editor.
-- developer.apple.com → Certificates, IDs & Profiles → Keys → **+**, tick
-  **Apple Push Notifications service (APNs)**, download the `.p8`.
-- Vercel → zero-club → Settings → Environment Variables: `APNS_KEY_ID` (the
-  key's ID) and `APNS_PRIVATE_KEY` (the `.p8` contents). `APPLE_TEAM_ID` is
-  already there from Sign in with Apple. Redeploy.
-- Ship a new build: the app now carries the Push Notifications entitlement.
+Setup, done 2026-11-16: `push_notifications.sql` run, APNs key 3C3CUDGWJW in
+Vercel as `APNS_KEY_ID` / `APNS_PRIVATE_KEY`. Still to run:
+`push_notifications_more.sql` (Supabase → SQL Editor).
 
-Until the key is set, `/api/push/notify` answers `not_configured` and the app
-carries on as before. Android needs a Firebase project and
-`android/app/google-services.json` before it can register; the app doesn't try
-there yet. The monthly payment reminder is still a local notification.
+Android needs a Firebase project and `android/app/google-services.json` before
+it can register; the app doesn't try there yet. The monthly payment reminder is
+still a local notification.
 
 ## 5. Tidy after review
 

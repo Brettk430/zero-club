@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { notifyPush, offerPush } from './push.js'
 
 const missingFunction = (error) => error?.code === 'PGRST202'
 const notReady = (error) => missingFunction(error)
@@ -64,6 +65,7 @@ export const fetchBadgeLeaderboard = async (limit = 25) => {
 export const requestFriend = async (meId, otherId) => {
   if (!supabase) return { error: 'Not available' }
   const { error } = await supabase.from('friendships').insert({ requester: meId, addressee: otherId })
+  if (!error) { notifyPush('friend_request', { other: otherId }); offerPush() }
   return { error: error?.message ?? null }
 }
 
@@ -72,6 +74,7 @@ export const acceptFriend = async (meId, requesterId) => {
   const { error } = await supabase.from('friendships')
     .update({ status: 'accepted', responded_at: new Date().toISOString() })
     .eq('requester', requesterId).eq('addressee', meId)
+  if (!error) { notifyPush('friend_accepted', { other: requesterId }); offerPush() }
   return { error: error?.message ?? null }
 }
 
